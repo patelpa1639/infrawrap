@@ -1,0 +1,266 @@
+#!/usr/bin/env node
+
+// ============================================================
+// InfraWrap — Autonomous Infrastructure Agent
+// Plan. Deploy. Monitor. Heal. Govern.
+// ============================================================
+
+import { getConfig, getDataDir, getPoliciesDir } from "./config.js";
+import { loadPolicy } from "./governance/policy.js";
+import { GovernanceEngine } from "./governance/index.js";
+import { ToolRegistry } from "./tools/registry.js";
+import { ProxmoxAdapter } from "./tools/proxmox/adapter.js";
+import { SystemAdapter } from "./tools/system/tools.js";
+import { AgentCore } from "./agent/core.js";
+import { EventBus } from "./agent/events.js";
+import { InfraWrapCLI } from "./frontends/cli.js";
+import { InfraWrapBot } from "./frontends/telegram.js";
+import { DashboardServer } from "./frontends/dashboard/server.js";
+import { InfraWrapMCP } from "./frontends/mcp.js";
+import { AutopilotDaemon } from "./autopilot/daemon.js";
+import { join } from "path";
+import { mkdirSync } from "fs";
+
+async function main() {
+  const args = process.argv.slice(2);
+  const mode = args[0] || "cli";
+
+  // Ensure data directory exists
+  const dataDir = getDataDir();
+  mkdirSync(dataDir, { recursive: true });
+
+  // Load config and policy
+  const config = getConfig();
+  const policyPath = join(getPoliciesDir(), "default.yaml");
+  const policy = loadPolicy(policyPath);
+
+  // Initialize event bus
+  const eventBus = new EventBus();
+
+  // Initialize governance
+  const governance = new GovernanceEngine(policy);
+
+  // Initialize tool registry
+  const registry = new ToolRegistry();
+
+  // Register Proxmox adapter
+  if (config.proxmox.tokenId && config.proxmox.tokenSecret) {
+    const proxmox = new ProxmoxAdapter({
+      host: config.proxmox.host,
+      port: config.proxmox.port,
+      tokenId: config.proxmox.tokenId,
+      tokenSecret: config.proxmox.tokenSecret,
+      allowSelfSignedCerts: config.proxmox.allowSelfSignedCerts,
+    });
+    registry.registerAdapter(proxmox);
+  }
+
+  // Register system adapter
+  const system = new SystemAdapter();
+  registry.registerAdapter(system);
+
+  // Connect all adapters
+  await registry.connectAll();
+
+  // Initialize agent core
+  const agentCore = new AgentCore({
+    toolRegistry: registry,
+    governance,
+    eventBus,
+    config: {
+      provider: config.ai.provider,
+      apiKey: config.ai.apiKey,
+      model: config.ai.model,
+    },
+  });
+
+  // Handle shutdown
+  const shutdown = async () => {
+    console.log("\nShutting down InfraWrap...");
+    await registry.disconnectAll();
+    process.exit(0);
+  };
+
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
+
+  switch (mode) {
+    case "cli": {
+      const cli = new InfraWrapCLI(agentCore, registry, eventBus, governance);
+
+      // If there's additional text after "cli", treat as one-shot
+      const input = args.slice(1).join(" ");
+      if (input) {
+        await cli.runOnce(input);
+      } else {
+        await cli.start();
+      }
+      break;
+    }
+
+    case "telegram": {
+      if (!config.telegram.botToken) {
+        console.error("Error: TELEGRAM_BOT_TOKEN is required for telegram mode");
+        process.exit(1);
+      }
+      const bot = new InfraWrapBot(
+        {
+          botToken: config.telegram.botToken,
+          allowedUsers: config.telegram.allowedUsers,
+        },
+        agentCore,
+        registry,
+        eventBus
+      );
+      await bot.start();
+      break;
+    }
+
+    case "dashboard": {
+      const dashboard = new DashboardServer(
+        config.dashboard.port,
+        agentCore,
+        registry,
+        eventBus,
+        governance.audit
+      );
+      await dashboard.start();
+
+      // If autopilot is enabled, start it alongside dashboard
+      if (config.autopilot.enabled) {
+        const autopilot = new AutopilotDaemon(
+          registry,
+          governance,
+          eventBus,
+          {
+            pollIntervalMs: config.autopilot.pollIntervalMs,
+            enabled: true,
+          }
+        );
+        autopilot.start();
+      }
+      break;
+    }
+
+    case "mcp": {
+      const mcp = new InfraWrapMCP(agentCore, registry, eventBus, governance);
+      await mcp.start();
+      break;
+    }
+
+    case "autopilot": {
+      const autopilot = new AutopilotDaemon(
+        registry,
+        governance,
+        eventBus,
+        {
+          pollIntervalMs: config.autopilot.pollIntervalMs,
+          enabled: true,
+        }
+      );
+      autopilot.start();
+      console.log(`Autopilot daemon started (polling every ${config.autopilot.pollIntervalMs}ms)`);
+
+      // Also start dashboard for monitoring
+      const dashboard = new DashboardServer(
+        config.dashboard.port,
+        agentCore,
+        registry,
+        eventBus,
+        governance.audit
+      );
+      await dashboard.start();
+      break;
+    }
+
+    case "full": {
+      // Start everything
+      console.log("Starting InfraWrap in full mode...\n");
+
+      // Dashboard
+      const dashboard = new DashboardServer(
+        config.dashboard.port,
+        agentCore,
+        registry,
+        eventBus,
+        governance.audit
+      );
+      await dashboard.start();
+
+      // Telegram (if configured)
+      if (config.telegram.botToken) {
+        const bot = new InfraWrapBot(
+          {
+            botToken: config.telegram.botToken,
+            allowedUsers: config.telegram.allowedUsers,
+          },
+          agentCore,
+          registry,
+          eventBus
+        );
+        await bot.start();
+      }
+
+      // Autopilot (if enabled)
+      if (config.autopilot.enabled) {
+        const autopilot = new AutopilotDaemon(
+          registry,
+          governance,
+          eventBus,
+          {
+            pollIntervalMs: config.autopilot.pollIntervalMs,
+            enabled: true,
+          }
+        );
+        autopilot.start();
+      }
+
+      console.log("\nAll services running. Press Ctrl+C to stop.\n");
+      break;
+    }
+
+    default: {
+      // Treat as one-shot command
+      const cli = new InfraWrapCLI(agentCore, registry, eventBus, governance);
+      const oneShot = args.join(" ");
+      if (oneShot) {
+        await cli.runOnce(oneShot);
+      } else {
+        console.log(`
+InfraWrap — Autonomous Infrastructure Agent
+
+Usage:
+  infrawrap                     Interactive CLI (REPL)
+  infrawrap cli                 Interactive CLI (REPL)
+  infrawrap cli "goal"          One-shot: plan and execute a goal
+  infrawrap "goal"              One-shot: plan and execute a goal
+  infrawrap telegram            Start Telegram bot
+  infrawrap dashboard           Start web dashboard
+  infrawrap mcp                 Start MCP server (for Claude Code)
+  infrawrap autopilot           Start autopilot daemon + dashboard
+  infrawrap full                Start all services
+
+Environment:
+  PROXMOX_HOST                  Proxmox VE host (default: localhost)
+  PROXMOX_PORT                  Proxmox VE port (default: 8006)
+  PROXMOX_TOKEN_ID              API token ID (user@realm!token)
+  PROXMOX_TOKEN_SECRET          API token secret
+  AI_PROVIDER                   LLM provider: anthropic | openai
+  AI_API_KEY                    LLM API key
+  AI_MODEL                      LLM model name
+  TELEGRAM_BOT_TOKEN            Telegram bot token
+  TELEGRAM_ALLOWED_USERS        Comma-separated Telegram user IDs
+  DASHBOARD_PORT                Dashboard port (default: 3000)
+  AUTOPILOT_ENABLED             Enable autopilot (default: false)
+  AUTOPILOT_POLL_INTERVAL_MS    Poll interval in ms (default: 30000)
+`);
+      }
+      break;
+    }
+  }
+}
+
+main().catch((err) => {
+  console.error("Fatal error:", err);
+  process.exit(1);
+});
