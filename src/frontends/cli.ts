@@ -386,6 +386,16 @@ export class InfraWrapCLI {
       terminal: true,
     });
 
+    // Route approval prompts through our readline instead of creating a second one
+    this.governanceEngine.approvalGate.setExternalHandler(async (_request) => {
+      return new Promise<boolean>((resolve) => {
+        this.rl?.question("\n  Approve? [y/N] ", (answer: string) => {
+          const approved = answer.trim().toLowerCase() === "y" || answer.trim().toLowerCase() === "yes";
+          resolve(approved);
+        });
+      });
+    });
+
     this.rl.prompt();
 
     this.rl.on("line", async (line: string) => {

@@ -28,9 +28,29 @@ const APPROVAL_MATRIX: Record<ApprovalMode, Set<ActionTier>> = {
   auto: new Set(["destructive"]),
 };
 
+// ── External Approval Handler ───────────────────────────────
+
+export type ExternalApprovalHandler = (
+  request: ApprovalRequest,
+) => Promise<boolean>;
+
 // ── ApprovalGate Class ──────────────────────────────────────
 
 export class ApprovalGate {
+  private externalHandler: ExternalApprovalHandler | null = null;
+
+  /**
+   * Set an external approval handler (e.g., the CLI's readline).
+   * When set, approvals are routed through this handler instead of
+   * creating a separate readline instance.
+   */
+  setExternalHandler(handler: ExternalApprovalHandler): void {
+    this.externalHandler = handler;
+  }
+
+  clearExternalHandler(): void {
+    this.externalHandler = null;
+  }
   /**
    * Determine whether an action at a given tier needs human approval
    * under the current agent mode and policy.
@@ -57,13 +77,9 @@ export class ApprovalGate {
   async requestApproval(
     request: ApprovalRequest,
   ): Promise<ApprovalResponse> {
-    const rl = createInterface({
-      input: process.stdin,
-      output: process.stderr, // Use stderr so stdout stays clean for piping
-    });
-
     const tierLabel = this.formatTier(request.tier);
 
+    // Print the approval box to stderr
     console.error("\n┌─────────────────────────────────────────────");
     console.error("│ APPROVAL REQUIRED");
     console.error("├─────────────────────────────────────────────");
@@ -75,6 +91,24 @@ export class ApprovalGate {
     }
     console.error(`│ Params:    ${JSON.stringify(request.params, null, 2).replace(/\n/g, "\n│            ")}`);
     console.error("└─────────────────────────────────────────────");
+
+    // If an external handler is set (e.g. CLI REPL), use it
+    if (this.externalHandler) {
+      const approved = await this.externalHandler(request);
+      return {
+        request_id: request.id,
+        approved,
+        approved_by: approved ? "cli_user" : undefined,
+        method: "cli",
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    // Fallback: own readline (for non-REPL contexts like one-shot mode)
+    const rl = createInterface({
+      input: process.stdin,
+      output: process.stderr,
+    });
 
     const answer = await new Promise<string>((resolve) => {
       rl.question("\n  Approve? [y/N] ", (ans) => {

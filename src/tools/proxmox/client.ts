@@ -334,8 +334,15 @@ export class ProxmoxClient {
 
       let postData: string | undefined;
       if (body && (method === "POST" || method === "PUT")) {
-        postData = JSON.stringify(body);
-        headers["Content-Type"] = "application/json";
+        // Proxmox API requires x-www-form-urlencoded, not JSON
+        const formParams = new URLSearchParams();
+        for (const [key, value] of Object.entries(body)) {
+          if (value !== undefined && value !== null) {
+            formParams.set(key, String(value));
+          }
+        }
+        postData = formParams.toString();
+        headers["Content-Type"] = "application/x-www-form-urlencoded";
         headers["Content-Length"] = Buffer.byteLength(postData).toString();
       }
 

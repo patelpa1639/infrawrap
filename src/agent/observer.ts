@@ -13,6 +13,29 @@ export interface ObservationResult {
   severity: "none" | "minor" | "major";
 }
 
+/** Read-only actions that don't change state — skip observation entirely. */
+const READ_ONLY_ACTIONS = new Set([
+  "list_vms",
+  "get_vm_status",
+  "list_nodes",
+  "get_node_stats",
+  "get_vm_config",
+  "list_snapshots",
+  "list_storage",
+  "list_isos",
+  "list_templates",
+  "list_downloaded_templates",
+  "get_task_status",
+  "list_tasks",
+  "wait_for_task",
+  "search_logs",
+  "list_network_interfaces",
+  "get_vm_firewall_rules",
+  "get_node_firewall_rules",
+  "get_vm_stats",
+  "ping",
+]);
+
 /** Actions whose outcome can be verified by simple state checks. */
 const SIMPLE_VM_ACTIONS = new Set([
   "start_vm",
@@ -42,6 +65,11 @@ export class Observer {
         discrepancies: [result.error || "Step failed"],
         severity: "major",
       };
+    }
+
+    // Read-only actions don't change state — if the tool succeeded, we're good
+    if (READ_ONLY_ACTIONS.has(step.action) || step.tier === "read") {
+      return { matches: true, discrepancies: [], severity: "none" };
     }
 
     // If no state snapshots, we can only trust the tool result

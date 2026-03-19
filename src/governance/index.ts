@@ -41,7 +41,7 @@ export { AuditLog } from "./audit.js";
 
 export class GovernanceEngine {
   private readonly policy: PolicyConfig;
-  private readonly approvalGate: ApprovalGate;
+  readonly approvalGate: ApprovalGate;
   readonly circuitBreaker: CircuitBreaker;
   readonly audit: AuditLog;
 
