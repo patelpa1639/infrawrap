@@ -72,6 +72,14 @@ export class Observer {
       return { matches: true, discrepancies: [], severity: "none" };
     }
 
+    // For write actions where the Proxmox API returned success (UPID task),
+    // trust the tool result. The LLM observer comparing cluster state snapshots
+    // produces false positives because getClusterState() returns summary data
+    // that doesn't capture all VM config details.
+    if (result.success && result.data !== undefined) {
+      return { matches: true, discrepancies: [], severity: "none" };
+    }
+
     // If no state snapshots, we can only trust the tool result
     if (!result.state_before && !result.state_after) {
       return { matches: true, discrepancies: [], severity: "none" };

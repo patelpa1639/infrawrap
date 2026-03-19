@@ -21,6 +21,15 @@ import { Investigator, type InvestigationContext } from "./investigator.js";
 import { AgentMemory } from "./memory.js";
 import { EventBus } from "./events.js";
 
+export interface StepOutput {
+  step_id: string;
+  action: string;
+  description: string;
+  success: boolean;
+  data?: unknown;
+  error?: string;
+}
+
 export interface AgentRunResult {
   success: boolean;
   plan: Plan;
@@ -29,6 +38,7 @@ export interface AgentRunResult {
   replans: number;
   duration_ms: number;
   errors: string[];
+  outputs: StepOutput[];
 }
 
 export interface AgentCoreOptions {
@@ -74,6 +84,7 @@ export class AgentCore {
   async run(goal: Goal): Promise<AgentRunResult> {
     const startTime = Date.now();
     const errors: string[] = [];
+    const outputs: StepOutput[] = [];
     let replans = 0;
     let stepsCompleted = 0;
     let stepsFailed = 0;
@@ -105,6 +116,7 @@ export class AgentCore {
         replans: 0,
         duration_ms: Date.now() - startTime,
         errors: [`Planning failed: ${errMsg}`],
+        outputs,
       };
     }
 
@@ -163,6 +175,16 @@ export class AgentCore {
         const result = await this.executor.executeStep(step, goal.mode);
         step.result = result;
 
+        // Capture step output for the CLI/frontends
+        outputs.push({
+          step_id: step.id,
+          action: step.action,
+          description: step.description,
+          success: result.success,
+          data: result.data,
+          error: result.error,
+        });
+
         if (!result.success) {
           step.status = "failed";
           stepsFailed++;
@@ -187,6 +209,7 @@ export class AgentCore {
               replans,
               duration_ms: Date.now() - startTime,
               errors,
+              outputs,
             };
           }
 
@@ -236,6 +259,7 @@ export class AgentCore {
                 replans,
                 duration_ms: Date.now() - startTime,
                 errors,
+                outputs,
               };
             }
 
@@ -261,6 +285,7 @@ export class AgentCore {
               replans,
               duration_ms: Date.now() - startTime,
               errors,
+              outputs,
             };
           }
         } else {
@@ -333,6 +358,7 @@ export class AgentCore {
       replans,
       duration_ms: Date.now() - startTime,
       errors,
+      outputs,
     };
   }
 

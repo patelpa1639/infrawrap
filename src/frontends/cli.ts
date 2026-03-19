@@ -527,6 +527,31 @@ export class InfraWrapCLI {
 
       this.lastPlan = result.plan;
 
+      // Show step outputs (the actual data returned by tools)
+      if (result.outputs.length > 0) {
+        for (const output of result.outputs) {
+          if (output.success && output.data !== undefined) {
+            console.log(
+              cyan(bold(`\n  ── ${output.action} ──`)),
+            );
+            const dataStr = typeof output.data === "string"
+              ? output.data
+              : JSON.stringify(output.data, null, 2);
+            // Indent and truncate long output
+            const lines = dataStr.split("\n");
+            const maxLines = 40;
+            const shown = lines.slice(0, maxLines);
+            for (const line of shown) {
+              console.log(`  ${line}`);
+            }
+            if (lines.length > maxLines) {
+              console.log(dim(`  ... (${lines.length - maxLines} more lines)`));
+            }
+          }
+        }
+        console.log("");
+      }
+
       // Show final plan state
       console.log(formatPlanTable(result.plan));
 
