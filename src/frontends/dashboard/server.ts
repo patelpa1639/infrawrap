@@ -8,7 +8,8 @@ import type { AgentCore } from "../../agent/core.js";
 import type { ToolRegistry } from "../../tools/registry.js";
 import { EventBus } from "../../agent/events.js";
 import type { AuditLog } from "../../governance/audit.js";
-import type { AgentEvent } from "../../types.js";
+import type { AgentEvent, Goal } from "../../types.js";
+import { randomUUID } from "node:crypto";
 import { IncidentManager } from "../../healing/incidents.js";
 import { getDataDir } from "../../config.js";
 import { join } from "node:path";
@@ -166,6 +167,17 @@ export class DashboardServer {
           break;
         case "/api/chaos/scenarios":
           this.handleChaosScenarios(res);
+          break;
+        case "/api/health/rightsizing":
+          this.handleRightsizing(res);
+          break;
+        case "/api/agent/command":
+          if (req.method === "POST") {
+            this.handleAgentCommand(req, res);
+          } else {
+            res.writeHead(405, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Method not allowed" }));
+          }
           break;
         default:
           // Dynamic route: /api/incidents/:id/timeline
@@ -393,6 +405,109 @@ export class DashboardServer {
     }
   }
 
+  // ── Right-sizing Recommendations ────────────────────
+
+  private async handleRightsizing(res: ServerResponse): Promise<void> {
+    try {
+      const store = this.healer?.getHealthMonitor().store;
+      if (!store) {
+        this.json(res, { recommendations: [], message: "Metric store not available" });
+        return;
+      }
+
+      const state = await this.toolRegistry.getClusterState();
+      if (!state) {
+        this.json(res, { recommendations: [], message: "Cluster state unavailable" });
+        return;
+      }
+
+      const recommendations: Array<{
+        vmid: string | number;
+        name: string;
+        node: string;
+        cpu_allocated: number;
+        cpu_avg_pct: number;
+        cpu_peak_pct: number;
+        cpu_recommended: number;
+        ram_allocated_mb: number;
+        ram_avg_pct: number;
+        ram_peak_pct: number;
+        ram_recommended_mb: number;
+        savings_pct: number;
+      }> = [];
+
+      const runningVMs = state.vms.filter((vm) => vm.status === "running");
+
+      for (const vm of runningVMs) {
+        const labels = { vmid: String(vm.id), node: vm.node, name: vm.name };
+
+        const cpuPoints = store.query("vm_cpu_pct", labels, 60);
+        const memPoints = store.query("vm_mem_pct", labels, 60);
+
+        // Need at least some data to make recommendations
+        if (cpuPoints.length < 2 && memPoints.length < 2) continue;
+
+        const cpuValues = cpuPoints.map((p) => p.value);
+        const memValues = memPoints.map((p) => p.value);
+
+        const cpuAvg = cpuValues.length > 0
+          ? cpuValues.reduce((a, b) => a + b, 0) / cpuValues.length
+          : 0;
+        const cpuPeak = cpuValues.length > 0 ? Math.max(...cpuValues) : 0;
+        const memAvg = memValues.length > 0
+          ? memValues.reduce((a, b) => a + b, 0) / memValues.length
+          : 0;
+        const memPeak = memValues.length > 0 ? Math.max(...memValues) : 0;
+
+        const isOverprovisionedCpu = cpuAvg < 20;
+        const isOverprovisionedRam = memAvg < 30;
+
+        if (!isOverprovisionedCpu && !isOverprovisionedRam) continue;
+
+        // Recommend: use peak usage + 30% headroom, minimum 1 core / 256 MB
+        const cpuRecommended = Math.max(
+          1,
+          Math.ceil(vm.cpu_cores * (cpuPeak / 100) * 1.3)
+        );
+        const ramRecommended = Math.max(
+          256,
+          Math.ceil((vm.ram_mb * (memPeak / 100) * 1.3) / 128) * 128 // round to 128MB
+        );
+
+        // Calculate savings as percentage of total allocated resources saved
+        const cpuSaved = Math.max(0, vm.cpu_cores - cpuRecommended);
+        const ramSaved = Math.max(0, vm.ram_mb - ramRecommended);
+        const savingsPct =
+          vm.cpu_cores + vm.ram_mb > 0
+            ? ((cpuSaved / Math.max(1, vm.cpu_cores) + ramSaved / Math.max(1, vm.ram_mb)) / 2) * 100
+            : 0;
+
+        recommendations.push({
+          vmid: vm.id,
+          name: vm.name,
+          node: vm.node,
+          cpu_allocated: vm.cpu_cores,
+          cpu_avg_pct: Math.round(cpuAvg * 10) / 10,
+          cpu_peak_pct: Math.round(cpuPeak * 10) / 10,
+          cpu_recommended: cpuRecommended,
+          ram_allocated_mb: vm.ram_mb,
+          ram_avg_pct: Math.round(memAvg * 10) / 10,
+          ram_peak_pct: Math.round(memPeak * 10) / 10,
+          ram_recommended_mb: ramRecommended,
+          savings_pct: Math.round(savingsPct * 10) / 10,
+        });
+      }
+
+      // Sort by savings potential (highest first)
+      recommendations.sort((a, b) => b.savings_pct - a.savings_pct);
+
+      this.json(res, { recommendations });
+    } catch (err) {
+      console.error("[DashboardServer] Rightsizing error:", err);
+      this.json(res, { error: "Failed to generate rightsizing recommendations" }, 500);
+    }
+  }
+
   // ── Chaos Engineering Handlers ──────────────────────
 
   private async parseBody(req: IncomingMessage): Promise<Record<string, unknown>> {
@@ -506,6 +621,34 @@ export class DashboardServer {
     } catch (err) {
       console.error("[DashboardServer] Chaos scenarios error:", err);
       this.json(res, { error: "Failed to get chaos scenarios" }, 500);
+    }
+  }
+
+  // ── Agent Command (Cmd+K palette) ──────────────────────
+
+  private async handleAgentCommand(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req);
+      const command = body.command as string;
+
+      if (!command || typeof command !== "string" || !command.trim()) {
+        this.json(res, { error: "Missing required field: command" }, 400);
+        return;
+      }
+
+      const goal: Goal = {
+        id: randomUUID(),
+        mode: "build",
+        description: command.trim(),
+        raw_input: command.trim(),
+        created_at: new Date().toISOString(),
+      };
+
+      const result = await this.agentCore.run(goal);
+      this.json(res, result);
+    } catch (err) {
+      console.error("[DashboardServer] Agent command error:", err);
+      this.json(res, { error: "Failed to execute agent command" }, 500);
     }
   }
 

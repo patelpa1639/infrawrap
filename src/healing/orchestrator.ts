@@ -11,6 +11,7 @@ import { PlaybookEngine, DEFAULT_PLAYBOOKS } from "./playbooks.js";
 import type { Playbook } from "./playbooks.js";
 import { IncidentManager } from "./incidents.js";
 import type { Incident } from "./incidents.js";
+import { callLLM } from "../agent/llm.js";
 
 // ── Types ───────────────────────────────────────────────────
 
@@ -316,6 +317,11 @@ export class HealingOrchestrator {
 
     if (this.activeHeals.size >= this.config.maxConcurrentHeals) return;
 
+    // Fire-and-forget: run AI root cause analysis in the background
+    this.analyzeRootCause(anomaly, incident).catch((err) => {
+      console.error(`[healing] RCA analysis failed for incident ${incident.id}:`, err instanceof Error ? err.message : String(err));
+    });
+
     await this.executeHealing(anomaly, incident, playbook, summary);
   }
 
@@ -524,6 +530,108 @@ export class HealingOrchestrator {
     }
 
     return anomalies;
+  }
+
+  // ── AI Root Cause Analysis ─────────────────────────────────
+
+  private async analyzeRootCause(anomaly: Anomaly, incident: Incident): Promise<void> {
+    try {
+      // Gather recent metrics for the affected resource (last 30 minutes)
+      const metricPoints = this.healthMonitor.store.query(
+        anomaly.metric,
+        anomaly.labels,
+        30,
+      );
+      const metricSummary = metricPoints.length > 0
+        ? metricPoints.map((p) => `[${new Date(p.timestamp).toISOString()}] ${p.value.toFixed(2)}`).join("\n")
+        : "No metric data available for the last 30 minutes.";
+
+      // Gather recent events
+      const recentEvents = this.eventBus.getHistory(20);
+      const eventsSummary = recentEvents.length > 0
+        ? recentEvents
+            .map((e) => `[${e.timestamp}] ${e.type}: ${JSON.stringify(e.data)}`)
+            .join("\n")
+        : "No recent events.";
+
+      const systemPrompt = `You are an infrastructure root cause analysis (RCA) engine for a Proxmox-based homelab managed by InfraWrap.
+Given an anomaly, recent metric history, and recent system events, determine the most likely root cause.
+
+Respond with a JSON object:
+{
+  "root_cause": "A concise explanation of the root cause (1-3 sentences)",
+  "confidence": "low" | "medium" | "high",
+  "contributing_factors": ["factor1", "factor2"],
+  "recommended_action": "What should be done to prevent recurrence"
+}`;
+
+      const userMessage = `Anomaly detected:
+- Type: ${anomaly.type}
+- Severity: ${anomaly.severity}
+- Metric: ${anomaly.metric}
+- Labels: ${JSON.stringify(anomaly.labels)}
+- Current Value: ${anomaly.current_value}
+- Message: ${anomaly.message}
+- Detected At: ${anomaly.detected_at}
+
+Recent metric history (${anomaly.metric}, last 30 min):
+${metricSummary}
+
+Recent system events:
+${eventsSummary}`;
+
+      const response = await callLLM({
+        system: systemPrompt,
+        user: userMessage,
+        config: this.agentCore.aiConfig,
+        maxTokens: 1024,
+      });
+
+      let rca: {
+        root_cause: string;
+        confidence: string;
+        contributing_factors: string[];
+        recommended_action: string;
+      };
+      try {
+        rca = JSON.parse(response);
+      } catch {
+        // If LLM returned plain text, use it as the root cause
+        rca = {
+          root_cause: response.slice(0, 500),
+          confidence: "low",
+          contributing_factors: [],
+          recommended_action: "Review manually",
+        };
+      }
+
+      // Record the RCA as an incident action
+      this.incidentManager.recordAction(
+        incident.id,
+        `AI Root Cause Analysis: ${rca.root_cause}`,
+        true,
+        `Confidence: ${rca.confidence}` +
+          (rca.contributing_factors.length > 0 ? ` | Factors: ${rca.contributing_factors.join(", ")}` : "") +
+          (rca.recommended_action ? ` | Recommendation: ${rca.recommended_action}` : ""),
+      );
+
+      // Emit the RCA event
+      this.emitEvent("incident_rca", {
+        incident_id: incident.id,
+        metric: anomaly.metric,
+        severity: anomaly.severity,
+        root_cause: rca.root_cause,
+        confidence: rca.confidence,
+        contributing_factors: rca.contributing_factors,
+        recommended_action: rca.recommended_action,
+      });
+
+      console.log(`[healing] RCA complete for incident ${incident.id}: ${rca.root_cause.slice(0, 100)}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[healing] RCA analysis error for incident ${incident.id}: ${msg}`);
+      // Non-fatal: don't re-throw, just log
+    }
   }
 
   // ── Helpers ─────────────────────────────────────────────────

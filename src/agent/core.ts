@@ -55,6 +55,11 @@ export class AgentCore {
   private eventBus: EventBus;
   private config: AIConfig;
 
+  /** Expose AI config for subsystems that need direct LLM access (e.g. RCA). */
+  get aiConfig(): AIConfig {
+    return this.config;
+  }
+
   readonly planner: Planner;
   readonly executor: Executor;
   readonly observer: Observer;

@@ -359,7 +359,8 @@ export type AgentEventType =
   | "chaos_started"
   | "chaos_recovery_detected"
   | "chaos_completed"
-  | "chaos_failed";
+  | "chaos_failed"
+  | "incident_rca";
 
 export interface AgentEvent {
   type: AgentEventType;

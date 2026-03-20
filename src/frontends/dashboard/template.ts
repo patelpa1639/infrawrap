@@ -2416,6 +2416,144 @@ tbody tr:last-child td {
   font-size: 0.82rem;
 }
 
+/* ── Right-sizing Recommendations ────────────────────── */
+.rightsizing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 12px;
+}
+.rightsizing-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  transition: border-color 0.2s;
+}
+.rightsizing-card.severity-red { border-left: 3px solid var(--red); }
+.rightsizing-card.severity-amber { border-left: 3px solid var(--amber); }
+.rightsizing-card.severity-green { border-left: 3px solid var(--teal); }
+.rightsizing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.rightsizing-vm-name {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+}
+.rightsizing-vm-meta {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+}
+.rightsizing-savings {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.rightsizing-savings.high { background: var(--red-muted); color: var(--red); }
+.rightsizing-savings.medium { background: var(--amber-muted); color: var(--amber); }
+.rightsizing-savings.low { background: var(--teal-muted); color: var(--teal); }
+.rightsizing-resource {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.rightsizing-resource-label {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  width: 32px;
+  flex-shrink: 0;
+}
+.rightsizing-bar-container {
+  flex: 1;
+  height: 18px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+.rightsizing-bar-used {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+.rightsizing-bar-allocated {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  border-right: 2px dashed rgba(255,255,255,0.25);
+}
+.rightsizing-bar-recommended {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-left: 2px solid var(--teal);
+  opacity: 0.8;
+}
+.rightsizing-resource-detail {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  width: 140px;
+  flex-shrink: 0;
+  text-align: right;
+}
+.rightsizing-resource-detail .rec {
+  color: var(--teal);
+  font-weight: 500;
+}
+.rightsizing-stats {
+  display: flex;
+  gap: 16px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.rightsizing-stat {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+}
+.rightsizing-stat span {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.rightsizing-empty {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-tertiary);
+  font-size: 0.82rem;
+}
+.rightsizing-summary {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.rightsizing-summary-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+}
+.rightsizing-summary-pill .pill-count {
+  font-weight: 700;
+  font-family: var(--font-heading);
+}
+
 /* ── Chaos Engineering Panel ─────────────────────────── */
 .chaos-controls {
   display: flex;
@@ -2659,6 +2797,242 @@ tbody tr:last-child td {
 }
 .chaos-history-item:last-child { border-bottom: none; }
 .chaos-history-meta { color: var(--text-tertiary); font-size: 0.71rem; }
+
+/* ── Command Palette (Cmd+K) ───────────────────────── */
+@keyframes cmdPaletteFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes cmdPaletteFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes cmdPaletteSlideIn {
+  from { opacity: 0; transform: translateY(-20px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes cmdPaletteSlideOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-20px) scale(0.97); }
+}
+@keyframes cmdPaletteSpin {
+  to { transform: rotate(360deg); }
+}
+
+.cmd-palette-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 15vh;
+  background: rgba(5, 8, 18, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.cmd-palette-overlay.open {
+  display: flex;
+  animation: cmdPaletteFadeIn 0.18s ease-out;
+}
+.cmd-palette-overlay.closing {
+  animation: cmdPaletteFadeOut 0.14s ease-in forwards;
+}
+
+.cmd-palette {
+  width: 100%;
+  max-width: 640px;
+  background: #0f1729;
+  border: 1px solid var(--teal-border);
+  border-radius: 16px;
+  box-shadow: 0 0 0 1px rgba(10,205,170,0.08), 0 24px 80px rgba(0,0,0,0.6), 0 0 60px rgba(10,205,170,0.06);
+  overflow: hidden;
+  animation: cmdPaletteSlideIn 0.22s ease-out;
+}
+.cmd-palette-overlay.closing .cmd-palette {
+  animation: cmdPaletteSlideOut 0.14s ease-in forwards;
+}
+
+.cmd-palette-input-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.cmd-palette-icon {
+  flex-shrink: 0;
+  color: var(--teal);
+  opacity: 0.7;
+}
+.cmd-palette-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  caret-color: var(--teal);
+}
+.cmd-palette-input::placeholder {
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+.cmd-palette-kbd {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+
+.cmd-palette-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.cmd-palette-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.cmd-palette-chip:hover {
+  color: var(--teal);
+  border-color: var(--teal-border);
+  background: var(--teal-muted);
+}
+
+.cmd-palette-response {
+  display: none;
+  padding: 16px 20px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+.cmd-palette-response.visible {
+  display: block;
+}
+.cmd-palette-response-label {
+  font-family: var(--font-brand);
+  font-size: 0.71rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--teal);
+  margin-bottom: 10px;
+}
+.cmd-palette-response-body {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.cmd-palette-response-body.error {
+  color: var(--red);
+}
+.cmd-palette-response-body.success {
+  color: var(--text-primary);
+}
+
+.cmd-palette-loading {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.cmd-palette-loading.visible {
+  display: flex;
+}
+.cmd-palette-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--teal);
+  border-radius: 50%;
+  animation: cmdPaletteSpin 0.6s linear infinite;
+}
+
+.cmd-palette-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+}
+.cmd-palette-footer-keys {
+  display: flex;
+  gap: 12px;
+}
+.cmd-palette-footer-keys span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.cmd-palette-footer-keys kbd {
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--text-tertiary);
+}
+
+/* Header Cmd+K trigger button */
+.cmd-k-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.cmd-k-trigger:hover {
+  color: var(--text-secondary);
+  border-color: var(--teal-border);
+  background: var(--bg-hover);
+}
+.cmd-k-trigger kbd {
+  font-family: var(--font-sans);
+  font-size: 0.68rem;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--text-tertiary);
+}
+
 </style>
 </head>
 <body>
@@ -2681,6 +3055,10 @@ tbody tr:last-child td {
     infra<span class="brand-accent">wrap</span>
   </div>
   <div class="header-right">
+    <button class="cmd-k-trigger" id="cmdKTrigger" title="Command Palette">
+      Ask InfraWrap
+      <kbd>\u2318K</kbd>
+    </button>
     <div class="conn-status">
       <span class="conn-dot" id="connDot"></span>
       <span id="connLabel">Connecting...</span>
@@ -2688,6 +3066,41 @@ tbody tr:last-child td {
     <span class="mode-pill watch" id="modePill">WATCH</span>
   </div>
 </header>
+
+<!-- ── Command Palette Overlay ─────────────────────── -->
+<div class="cmd-palette-overlay" id="cmdPaletteOverlay">
+  <div class="cmd-palette" id="cmdPalette">
+    <div class="cmd-palette-input-row">
+      <svg class="cmd-palette-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+      </svg>
+      <input type="text" class="cmd-palette-input" id="cmdPaletteInput" placeholder="Ask InfraWrap anything..." autocomplete="off" spellcheck="false">
+      <span class="cmd-palette-kbd">ESC</span>
+    </div>
+    <div class="cmd-palette-chips" id="cmdPaletteChips">
+      <button class="cmd-palette-chip" data-cmd="List running VMs">List running VMs</button>
+      <button class="cmd-palette-chip" data-cmd="Show cluster health">Show cluster health</button>
+      <button class="cmd-palette-chip" data-cmd="Restart VM 104">Restart VM 104</button>
+      <button class="cmd-palette-chip" data-cmd="What's using the most CPU?">What's using the most CPU?</button>
+      <button class="cmd-palette-chip" data-cmd="Prepare node for maintenance">Prepare node for maintenance</button>
+    </div>
+    <div class="cmd-palette-loading" id="cmdPaletteLoading">
+      <div class="cmd-palette-spinner"></div>
+      <span>InfraWrap is thinking...</span>
+    </div>
+    <div class="cmd-palette-response" id="cmdPaletteResponse">
+      <div class="cmd-palette-response-label">Response</div>
+      <div class="cmd-palette-response-body" id="cmdPaletteResponseBody"></div>
+    </div>
+    <div class="cmd-palette-footer">
+      <span>InfraWrap Agent</span>
+      <div class="cmd-palette-footer-keys">
+        <span><kbd>\u21B5</kbd> Run</span>
+        <span><kbd>ESC</kbd> Close</span>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ── Stats Row ───────────────────────────────────── -->
 <div class="stat-row" id="statRow">
@@ -2787,6 +3200,23 @@ tbody tr:last-child td {
         <div class="card-body">
           <div class="predictions-grid" id="predictionsGrid">
             <div class="predictions-empty">Loading predictions...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right-sizing Recommendations -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;opacity:0.6"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="7.5 4.21 12 6.81 16.5 4.21"/><polyline points="7.5 19.79 7.5 14.6 3 12"/><polyline points="21 12 16.5 14.6 16.5 19.79"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            VM Right-Sizing
+          </span>
+          <span class="card-badge" id="rightsizingBadge" style="background:var(--teal-muted);color:var(--teal);font-size:0.65rem">BETA</span>
+        </div>
+        <div class="card-body">
+          <div id="rightsizingSummary" class="rightsizing-summary" style="display:none"></div>
+          <div class="rightsizing-grid" id="rightsizingGrid">
+            <div class="rightsizing-empty">Loading right-sizing analysis...</div>
           </div>
         </div>
       </div>
@@ -3194,6 +3624,7 @@ function connect() {
   evtSource.addEventListener('incident_action', (e) => handleEvent(JSON.parse(e.data)));
   evtSource.addEventListener('incident_resolved', (e) => handleEvent(JSON.parse(e.data)));
   evtSource.addEventListener('incident_failed', (e) => handleEvent(JSON.parse(e.data)));
+  evtSource.addEventListener('incident_rca', (e) => handleEvent(JSON.parse(e.data)));
   evtSource.addEventListener('healing_started', (e) => handleEvent(JSON.parse(e.data)));
   evtSource.addEventListener('healing_completed', (e) => handleEvent(JSON.parse(e.data)));
   evtSource.addEventListener('healing_failed', (e) => handleEvent(JSON.parse(e.data)));
@@ -3293,6 +3724,10 @@ function handleEvent(event) {
 
     case 'incident_failed':
       handleIncidentFailed(d);
+      break;
+
+    case 'incident_rca':
+      handleIncidentRca(d);
       break;
 
     case 'healing_started':
@@ -3576,6 +4011,12 @@ function formatEvent(event) {
         title: 'Incident failed',
         detail: d.error || d.message || 'Healing was unsuccessful',
         isError: true,
+      };
+    case 'incident_rca':
+      return {
+        iconClass: 'info', icon: '&#128269;',
+        title: 'AI Root Cause Analysis <span class="event-action">' + escapeHtml(d.confidence || '') + ' confidence</span>',
+        detail: d.root_cause ? escapeHtml(d.root_cause.slice(0, 200)) + (d.recommended_action ? ' — Recommendation: ' + escapeHtml(d.recommended_action.slice(0, 150)) : '') : null,
       };
 
     // ── Healing Events ──
@@ -4050,6 +4491,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     if (tab.dataset.tab === 'governance') loadAudit();
     if (tab.dataset.tab === 'incidents') loadIncidents();
     if (tab.dataset.tab === 'chaos') loadChaosPanel();
+    if (tab.dataset.tab === 'resources') loadRightsizing();
   });
 });
 
@@ -4320,6 +4762,27 @@ function handleIncidentFailed(d) {
   updateIncidentBadge();
 }
 
+function handleIncidentRca(d) {
+  const inc = state.incidents.active.find(i => i.id === d.incident_id);
+  if (inc) {
+    if (!inc.rca) inc.rca = {};
+    inc.rca.root_cause = d.root_cause;
+    inc.rca.confidence = d.confidence;
+    inc.rca.contributing_factors = d.contributing_factors;
+    inc.rca.recommended_action = d.recommended_action;
+    // Also add as an action so it appears in the timeline
+    if (!inc.actions_taken) inc.actions_taken = [];
+    inc.actions_taken.push({
+      action: 'AI Root Cause Analysis',
+      timestamp: new Date().toISOString(),
+      success: true,
+      details: d.root_cause + (d.recommended_action ? ' — Recommendation: ' + d.recommended_action : ''),
+    });
+    delete state.incidents.timelines[d.incident_id];
+    renderIncidents();
+  }
+}
+
 function handleHealingStarted(d) {
   const inc = state.incidents.active.find(i => i.id === d.incident_id);
   if (inc) {
@@ -4461,9 +4924,10 @@ function renderIncidentTimeline(inc) {
 
   if (inc.actions_taken) {
     inc.actions_taken.forEach(a => {
+      const isRca = a.action === 'AI Root Cause Analysis';
       entries.push({
         timestamp: a.timestamp,
-        event: 'action',
+        event: isRca ? 'rca' : 'action',
         detail: a.details || a.action,
         success: a.success,
       });
@@ -4518,6 +4982,10 @@ function renderIncidentTimeline(inc) {
       case 'failed':
         icon = '&#10007;';
         label = 'Failed';
+        break;
+      case 'rca':
+        icon = '&#128269;';
+        label = 'AI Root Cause Analysis';
         break;
     }
 
@@ -4832,6 +5300,117 @@ async function loadPredictions() {
   try {
     var data = await fetch('/api/health/predictions').then(function(r) { return r.json(); });
     renderPredictions(data.predictions || []);
+  } catch(e) {
+    // silently fail
+  }
+}
+
+// ── Right-sizing Recommendations ──────────────────────
+
+function renderRightsizing(recommendations) {
+  var grid = document.getElementById('rightsizingGrid');
+  var summaryEl = document.getElementById('rightsizingSummary');
+  var badge = document.getElementById('rightsizingBadge');
+  if (!grid) return;
+
+  if (!recommendations || recommendations.length === 0) {
+    grid.innerHTML = '<div class="rightsizing-empty">All VMs appear right-sized, or not enough metric data yet (need ~2 min of history).</div>';
+    if (summaryEl) summaryEl.style.display = 'none';
+    if (badge) { badge.textContent = 'ALL OK'; badge.style.background = 'var(--teal-muted)'; badge.style.color = 'var(--teal)'; }
+    return;
+  }
+
+  // Summary counts
+  var highCount = 0, medCount = 0, lowCount = 0;
+  recommendations.forEach(function(r) {
+    if (r.savings_pct >= 50) highCount++;
+    else if (r.savings_pct >= 25) medCount++;
+    else lowCount++;
+  });
+
+  if (summaryEl) {
+    summaryEl.style.display = 'flex';
+    var html = '';
+    html += '<div class="rightsizing-summary-pill"><span class="pill-count" style="color:var(--red)">' + highCount + '</span> Significantly Over</div>';
+    html += '<div class="rightsizing-summary-pill"><span class="pill-count" style="color:var(--amber)">' + medCount + '</span> Slightly Over</div>';
+    html += '<div class="rightsizing-summary-pill"><span class="pill-count" style="color:var(--teal)">' + lowCount + '</span> Minor</div>';
+    summaryEl.innerHTML = html;
+  }
+
+  if (badge) {
+    badge.textContent = recommendations.length + ' VM' + (recommendations.length !== 1 ? 's' : '');
+    if (highCount > 0) { badge.style.background = 'var(--red-muted)'; badge.style.color = 'var(--red)'; }
+    else if (medCount > 0) { badge.style.background = 'var(--amber-muted)'; badge.style.color = 'var(--amber)'; }
+    else { badge.style.background = 'var(--teal-muted)'; badge.style.color = 'var(--teal)'; }
+  }
+
+  grid.innerHTML = recommendations.map(function(r) {
+    var severity = r.savings_pct >= 50 ? 'red' : r.savings_pct >= 25 ? 'amber' : 'green';
+    var savingsClass = r.savings_pct >= 50 ? 'high' : r.savings_pct >= 25 ? 'medium' : 'low';
+
+    // CPU bar: avg usage as filled, show where recommended line falls
+    var cpuUsedWidth = Math.min(r.cpu_avg_pct, 100);
+    var cpuPeakWidth = Math.min(r.cpu_peak_pct, 100);
+    var cpuRecPct = r.cpu_allocated > 0 ? Math.min((r.cpu_recommended / r.cpu_allocated) * 100, 100) : 100;
+    var cpuBarColor = r.cpu_avg_pct < 20 ? 'var(--red)' : r.cpu_avg_pct < 40 ? 'var(--amber)' : 'var(--teal)';
+
+    // RAM bar
+    var ramUsedWidth = Math.min(r.ram_avg_pct, 100);
+    var ramPeakWidth = Math.min(r.ram_peak_pct, 100);
+    var ramRecPct = r.ram_allocated_mb > 0 ? Math.min((r.ram_recommended_mb / r.ram_allocated_mb) * 100, 100) : 100;
+    var ramBarColor = r.ram_avg_pct < 30 ? 'var(--red)' : r.ram_avg_pct < 50 ? 'var(--amber)' : 'var(--teal)';
+
+    var ramAllocStr = r.ram_allocated_mb >= 1024 ? (r.ram_allocated_mb / 1024).toFixed(1) + ' GB' : r.ram_allocated_mb + ' MB';
+    var ramRecStr = r.ram_recommended_mb >= 1024 ? (r.ram_recommended_mb / 1024).toFixed(1) + ' GB' : r.ram_recommended_mb + ' MB';
+
+    var html = '<div class="rightsizing-card severity-' + severity + '">';
+
+    // Header
+    html += '<div class="rightsizing-header">';
+    html += '<div>';
+    html += '<div class="rightsizing-vm-name">' + escapeHtml(r.name) + '</div>';
+    html += '<div class="rightsizing-vm-meta">VMID ' + r.vmid + ' &middot; ' + escapeHtml(r.node) + '</div>';
+    html += '</div>';
+    html += '<div class="rightsizing-savings ' + savingsClass + '">' + r.savings_pct + '% savings</div>';
+    html += '</div>';
+
+    // CPU bar
+    html += '<div class="rightsizing-resource">';
+    html += '<div class="rightsizing-resource-label">CPU</div>';
+    html += '<div class="rightsizing-bar-container">';
+    html += '<div class="rightsizing-bar-used" style="width:' + cpuUsedWidth + '%;background:' + cpuBarColor + ';opacity:0.7"></div>';
+    html += '<div class="rightsizing-bar-used" style="width:' + cpuPeakWidth + '%;background:' + cpuBarColor + ';opacity:0.25"></div>';
+    html += '<div class="rightsizing-bar-recommended" style="left:' + cpuRecPct + '%"></div>';
+    html += '</div>';
+    html += '<div class="rightsizing-resource-detail">' + r.cpu_allocated + ' cores &rarr; <span class="rec">' + r.cpu_recommended + '</span></div>';
+    html += '</div>';
+
+    // RAM bar
+    html += '<div class="rightsizing-resource">';
+    html += '<div class="rightsizing-resource-label">RAM</div>';
+    html += '<div class="rightsizing-bar-container">';
+    html += '<div class="rightsizing-bar-used" style="width:' + ramUsedWidth + '%;background:' + ramBarColor + ';opacity:0.7"></div>';
+    html += '<div class="rightsizing-bar-used" style="width:' + ramPeakWidth + '%;background:' + ramBarColor + ';opacity:0.25"></div>';
+    html += '<div class="rightsizing-bar-recommended" style="left:' + ramRecPct + '%"></div>';
+    html += '</div>';
+    html += '<div class="rightsizing-resource-detail">' + ramAllocStr + ' &rarr; <span class="rec">' + ramRecStr + '</span></div>';
+    html += '</div>';
+
+    // Stats
+    html += '<div class="rightsizing-stats">';
+    html += '<div class="rightsizing-stat">CPU avg <span>' + r.cpu_avg_pct + '%</span> peak <span>' + r.cpu_peak_pct + '%</span></div>';
+    html += '<div class="rightsizing-stat">RAM avg <span>' + r.ram_avg_pct + '%</span> peak <span>' + r.ram_peak_pct + '%</span></div>';
+    html += '</div>';
+
+    html += '</div>';
+    return html;
+  }).join('');
+}
+
+async function loadRightsizing() {
+  try {
+    var data = await fetch('/api/health/rightsizing').then(function(r) { return r.json(); });
+    renderRightsizing(data.recommendations || []);
   } catch(e) {
     // silently fail
   }
@@ -5641,6 +6220,143 @@ setInterval(function() {
 // Initial topology load
 refreshTopology();
 
+// ── Command Palette (Cmd+K) ─────────────────────────────
+(function() {
+  var overlay = document.getElementById('cmdPaletteOverlay');
+  var palette = document.getElementById('cmdPalette');
+  var input = document.getElementById('cmdPaletteInput');
+  var loading = document.getElementById('cmdPaletteLoading');
+  var response = document.getElementById('cmdPaletteResponse');
+  var responseBody = document.getElementById('cmdPaletteResponseBody');
+  var chips = document.getElementById('cmdPaletteChips');
+  var trigger = document.getElementById('cmdKTrigger');
+
+  function openPalette() {
+    overlay.classList.remove('closing');
+    overlay.classList.add('open');
+    // Reset state
+    input.value = '';
+    loading.classList.remove('visible');
+    response.classList.remove('visible');
+    chips.style.display = '';
+    responseBody.className = 'cmd-palette-response-body';
+    responseBody.textContent = '';
+    setTimeout(function() { input.focus(); }, 50);
+  }
+
+  function closePalette() {
+    overlay.classList.add('closing');
+    setTimeout(function() {
+      overlay.classList.remove('open', 'closing');
+    }, 150);
+  }
+
+  function isPaletteOpen() {
+    return overlay.classList.contains('open');
+  }
+
+  async function sendCommand(command) {
+    if (!command.trim()) return;
+    // Show loading, hide chips
+    chips.style.display = 'none';
+    response.classList.remove('visible');
+    loading.classList.add('visible');
+
+    try {
+      var res = await fetch('/api/agent/command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: command.trim() }),
+      });
+      var data = await res.json();
+      loading.classList.remove('visible');
+      response.classList.add('visible');
+
+      if (!res.ok || data.error) {
+        responseBody.className = 'cmd-palette-response-body error';
+        responseBody.textContent = data.error || 'Request failed (HTTP ' + res.status + ')';
+      } else {
+        responseBody.className = 'cmd-palette-response-body success';
+        // Format the result
+        var lines = [];
+        if (data.success !== undefined) lines.push(data.success ? 'Completed successfully' : 'Completed with errors');
+        if (data.steps_completed !== undefined) lines.push('Steps completed: ' + data.steps_completed);
+        if (data.steps_failed) lines.push('Steps failed: ' + data.steps_failed);
+        if (data.duration_ms) lines.push('Duration: ' + (data.duration_ms / 1000).toFixed(1) + 's');
+        if (data.plan && data.plan.reasoning) lines.push('\\nReasoning: ' + data.plan.reasoning);
+        if (data.plan && data.plan.steps) {
+          lines.push('\\nPlan:');
+          data.plan.steps.forEach(function(s, i) {
+            lines.push('  ' + (i + 1) + '. ' + s.description + (s.status ? ' [' + s.status + ']' : ''));
+          });
+        }
+        if (data.outputs && data.outputs.length) {
+          lines.push('\\nOutputs:');
+          data.outputs.forEach(function(o) {
+            if (o.summary) lines.push('  - ' + o.summary);
+            if (o.output) lines.push('    ' + (typeof o.output === 'string' ? o.output : JSON.stringify(o.output)));
+          });
+        }
+        if (data.errors && data.errors.length) {
+          lines.push('\\nErrors:');
+          data.errors.forEach(function(e) { lines.push('  - ' + e); });
+        }
+        responseBody.textContent = lines.join('\\n');
+      }
+    } catch (err) {
+      loading.classList.remove('visible');
+      response.classList.add('visible');
+      responseBody.className = 'cmd-palette-response-body error';
+      responseBody.textContent = 'Network error: ' + err.message;
+    }
+  }
+
+  // Keyboard shortcut: Cmd+K / Ctrl+K
+  document.addEventListener('keydown', function(e) {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      e.stopPropagation();
+      if (isPaletteOpen()) {
+        closePalette();
+      } else {
+        openPalette();
+      }
+    }
+    if (e.key === 'Escape' && isPaletteOpen()) {
+      e.preventDefault();
+      closePalette();
+    }
+  });
+
+  // Click overlay to close
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) closePalette();
+  });
+
+  // Trigger button
+  trigger.addEventListener('click', function() {
+    openPalette();
+  });
+
+  // Enter to submit
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendCommand(input.value);
+    }
+  });
+
+  // Suggestion chips
+  chips.addEventListener('click', function(e) {
+    var chip = e.target.closest('.cmd-palette-chip');
+    if (chip) {
+      var cmd = chip.getAttribute('data-cmd');
+      input.value = cmd;
+      sendCommand(cmd);
+    }
+  });
+})();
+
 // ── Init ───────────────────────────────────────────────
 connect();
 pollCluster();
@@ -5650,6 +6366,8 @@ setInterval(pollCluster, 10000);
 setInterval(updateGov, 5000);
 setInterval(function() { updateIncidentBadge(); renderActiveIncidents(); }, 15000); // refresh time-ago
 setInterval(loadPredictions, 30000);
+loadRightsizing();
+setInterval(loadRightsizing, 30000);
 </script>
 </body>
 </html>`;
