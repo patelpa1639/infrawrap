@@ -327,8 +327,12 @@ export class ProxmoxAdapter implements InfraAdapter {
     toolName: string,
     params: Record<string, unknown>
   ): Promise<ToolCallResult> {
+    // Strip internal params (like _plan_id) before sending to Proxmox API
+    const cleanParams = Object.fromEntries(
+      Object.entries(params).filter(([k]) => !k.startsWith("_")),
+    );
     try {
-      const data = await this.dispatch(toolName, params);
+      const data = await this.dispatch(toolName, cleanParams);
       return { success: true, data };
     } catch (err) {
       return {

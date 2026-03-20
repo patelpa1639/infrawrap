@@ -81,6 +81,219 @@ function formatStepStatus(status: StepStatus): string {
   }
 }
 
+/**
+ * Format step output data into clean, readable tables for common actions.
+ * Falls back to truncated JSON for unknown shapes.
+ */
+function formatStepData(action: string, data: unknown): string {
+  try {
+    if (action === "list_vms" && Array.isArray(data)) {
+      if (data.length === 0) return dim("No VMs found.");
+
+      // Sort: running first, then by vmid
+      const sorted = [...data].sort((a: any, b: any) => {
+        if (a.status === "running" && b.status !== "running") return -1;
+        if (a.status !== "running" && b.status === "running") return 1;
+        return (a.vmid ?? a.id ?? 0) - (b.vmid ?? b.id ?? 0);
+      });
+
+      const rows = sorted.map((vm: any) => {
+        const ramUsed = vm.mem ?? 0;
+        const ramTotal = vm.maxmem ?? 0;
+        const ramGB = ramTotal > 0 ? (ramTotal / (1024 ** 3)).toFixed(1) : "-";
+        const ramPct = ramTotal > 0 ? Math.round((ramUsed / ramTotal) * 100) : 0;
+        const ramStr = ramTotal > 0
+          ? `${ramGB} GB ${ramBar(ramPct)}`
+          : "-";
+        const cpuStr = typeof vm.cpu === "number"
+          ? (vm.cpu * 100).toFixed(1) + "%"
+          : (vm.cpus ? vm.cpus + " cores" : "-");
+        const tags = vm.tags ? dim(` [${vm.tags}]`) : "";
+
+        return {
+          id: String(vm.vmid ?? vm.id ?? "-"),
+          name: String(vm.name ?? "-").slice(0, 24) + tags,
+          status: String(vm.status ?? "-"),
+          node: String(vm.node ?? "-"),
+          cpu: cpuStr,
+          ram: ramStr,
+          type: String(vm.type === "lxc" ? "CT" : "VM"),
+        };
+      });
+
+      return renderTable(
+        ["ID", "Name", "Status", "Node", "CPU", "RAM", "Type"],
+        rows.map(r => [r.id, r.name, colorStatus(r.status), r.node, r.cpu, r.ram, r.type]),
+      );
+    }
+
+    if (action === "list_nodes" && Array.isArray(data)) {
+      if (data.length === 0) return dim("No nodes found.");
+      const rows = data.map((n: any) => ({
+        name: String(n.node ?? n.name ?? "-"),
+        status: String(n.status ?? "-"),
+        cpu: typeof n.cpu === "number" ? (n.cpu * 100).toFixed(1) + "%" : "-",
+        ram: n.maxmem ? formatBytes(n.mem ?? 0) + " / " + formatBytes(n.maxmem) : "-",
+        uptime: typeof n.uptime === "number" ? formatSecs(n.uptime) : "-",
+      }));
+      return renderTable(
+        ["Node", "Status", "CPU", "RAM", "Uptime"],
+        rows.map(r => [r.name, colorStatus(r.status), r.cpu, r.ram, r.uptime]),
+      );
+    }
+
+    if (action === "list_storage" && Array.isArray(data)) {
+      if (data.length === 0) return dim("No storage found.");
+      const rows = data.map((s: any) => ({
+        name: String(s.storage ?? s.name ?? "-"),
+        type: String(s.type ?? "-"),
+        status: String(s.status ?? s.active ? "active" : "-"),
+        total: s.total ? formatBytes(s.total) : "-",
+        used: s.used ? formatBytes(s.used) : "-",
+        avail: s.avail ? formatBytes(s.avail) : "-",
+        node: String(s.node ?? "-"),
+      }));
+      return renderTable(
+        ["Storage", "Type", "Status", "Total", "Used", "Avail", "Node"],
+        rows.map(r => [r.name, r.type, r.status, r.total, r.used, r.avail, r.node]),
+      );
+    }
+
+    if (action === "list_snapshots" && Array.isArray(data)) {
+      if (data.length === 0) return dim("No snapshots found.");
+      const rows = data.map((s: any) => ({
+        name: String(s.name ?? "-"),
+        desc: String(s.description ?? s.snaptime ?? "-").slice(0, 30),
+        parent: String(s.parent ?? "-"),
+      }));
+      return renderTable(
+        ["Snapshot", "Description", "Parent"],
+        rows.map(r => [r.name, r.desc, r.parent]),
+      );
+    }
+
+    if (action === "list_tasks" && Array.isArray(data)) {
+      if (data.length === 0) return dim("No tasks found.");
+      const rows = data.map((t: any) => ({
+        upid: String(t.upid ?? "-").slice(-20),
+        type: String(t.type ?? "-"),
+        status: String(t.status ?? "-"),
+        node: String(t.node ?? "-"),
+        user: String(t.user ?? "-"),
+      }));
+      return renderTable(
+        ["UPID (tail)", "Type", "Status", "Node", "User"],
+        rows.map(r => [r.upid, r.type, colorStatus(r.status), r.node, r.user]),
+      );
+    }
+
+    if ((action === "get_vm_status" || action === "get_vm_config" || action === "get_node_stats") && typeof data === "object" && data !== null) {
+      return renderKV(data as Record<string, unknown>);
+    }
+
+    // Fallback: compact display
+    if (typeof data === "string") return data;
+    if (Array.isArray(data) && data.length > 0 && typeof data[0] === "object") {
+      // Generic array of objects — render as table with first few keys
+      const keys = Object.keys(data[0]).slice(0, 7);
+      const rows = data.map((item: any) =>
+        keys.map(k => {
+          const v = item[k];
+          if (v === undefined || v === null) return "-";
+          if (typeof v === "number" && v > 1e9) return formatBytes(v); // likely bytes
+          return String(v).slice(0, 24);
+        }),
+      );
+      return renderTable(keys, rows);
+    }
+    const dataStr = JSON.stringify(data, null, 2);
+    const lines = dataStr.split("\n");
+    const maxLines = 20;
+    if (lines.length <= maxLines) return dataStr;
+    return lines.slice(0, maxLines).join("\n") + "\n" + dim(`... (${lines.length - maxLines} more lines)`);
+  } catch {
+    return typeof data === "string" ? data : JSON.stringify(data, null, 2).slice(0, 2000);
+  }
+}
+
+/** Render an ASCII table from headers and rows. */
+function renderTable(headers: string[], rows: string[][]): string {
+  // Strip ANSI for width calculation
+  const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, "");
+
+  // Calculate column widths
+  const widths = headers.map((h, i) => {
+    const dataMax = rows.reduce((max, row) => Math.max(max, stripAnsi(row[i] ?? "").length), 0);
+    return Math.max(h.length, dataMax);
+  });
+
+  const pad = (s: string, w: number) => s + " ".repeat(Math.max(0, w - stripAnsi(s).length));
+  const sep = dim("  ");
+
+  let out = "\n";
+  // Header
+  out += dim(headers.map((h, i) => pad(h, widths[i])).join("  ")) + "\n";
+  out += dim(widths.map(w => "─".repeat(w)).join("──")) + "\n";
+  // Rows
+  for (const row of rows) {
+    out += row.map((cell, i) => pad(cell, widths[i])).join(sep) + "\n";
+  }
+  out += dim(`\n${rows.length} item${rows.length === 1 ? "" : "s"}`);
+  return out;
+}
+
+/** Render key-value pairs for single-object responses. */
+function renderKV(obj: Record<string, unknown>): string {
+  const entries = Object.entries(obj)
+    .filter(([, v]) => v !== undefined && v !== null && v !== "")
+    .sort(([a], [b]) => a.localeCompare(b));
+  if (entries.length === 0) return dim("(empty)");
+
+  const maxKey = Math.min(entries.reduce((m, [k]) => Math.max(m, k.length), 0), 24);
+
+  let out = "\n";
+  for (const [key, val] of entries) {
+    const k = key.padEnd(maxKey);
+    const v = typeof val === "object" ? JSON.stringify(val) : String(val);
+    out += `${dim(k)}  ${v.length > 80 ? v.slice(0, 77) + "..." : v}\n`;
+  }
+  return out;
+}
+
+/** Compact ASCII bar for RAM/disk usage */
+function ramBar(pct: number): string {
+  const width = 8;
+  const filled = Math.round((pct / 100) * width);
+  const empty = width - filled;
+  const colorFn = pct > 85 ? red : pct > 60 ? yellow : green;
+  return dim("[") + colorFn("█".repeat(filled)) + dim("░".repeat(empty)) + dim("]");
+}
+
+function colorStatus(status: string): string {
+  const s = status.toLowerCase();
+  if (s === "running" || s === "online" || s === "active" || s === "ok" || s === "success") return green(status);
+  if (s === "stopped" || s === "offline" || s === "error" || s === "failed") return red(status);
+  if (s === "paused" || s === "suspended" || s === "warning") return yellow(status);
+  return status;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  const val = bytes / Math.pow(1024, i);
+  return val.toFixed(i >= 3 ? 1 : 0) + " " + units[i];
+}
+
+function formatSecs(seconds: number): string {
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
 function formatPlanTable(plan: Plan): string {
   const lines: string[] = [];
   const divider = dim("─".repeat(78));
@@ -386,7 +599,32 @@ export class InfraWrapCLI {
       terminal: true,
     });
 
-    // Route approval prompts through our readline instead of creating a second one
+    // Route plan approval through our readline
+    this.governanceEngine.approvalGate.setPlanApprovalHandler(
+      async (_planId, goal, steps, reasoning) => {
+        console.log("\n" + cyan(bold("  ┌─ PLAN APPROVAL ─────────────────────────────")));
+        console.log(cyan("  │") + ` Goal: ${bold(goal)}`);
+        if (reasoning) {
+          console.log(cyan("  │") + dim(` Reasoning: ${reasoning}`));
+        }
+        console.log(cyan("  │"));
+        for (let i = 0; i < steps.length; i++) {
+          const s = steps[i];
+          const tierColor = s.tier === "destructive" ? red : s.tier === "risky_write" ? yellow : green;
+          console.log(cyan("  │") + `  ${i + 1}. ${tierColor(`[${s.tier}]`)} ${s.action} — ${s.description}`);
+        }
+        console.log(cyan("  └────────────────────────────────────────────"));
+
+        return new Promise<boolean>((resolve) => {
+          this.rl?.question("\n  Approve this plan? [y/N] ", (answer: string) => {
+            const approved = answer.trim().toLowerCase() === "y" || answer.trim().toLowerCase() === "yes";
+            resolve(approved);
+          });
+        });
+      },
+    );
+
+    // Route step-level approval (destructive actions) through our readline
     this.governanceEngine.approvalGate.setExternalHandler(async (_request) => {
       return new Promise<boolean>((resolve) => {
         this.rl?.question("\n  Approve? [y/N] ", (answer: string) => {
@@ -527,6 +765,12 @@ export class InfraWrapCLI {
 
       this.lastPlan = result.plan;
 
+      // Determine if this is a simple read-only query (1 step, read tier, success)
+      const isSimpleRead = result.success
+        && result.plan.steps.length === 1
+        && result.plan.steps[0].tier === "read"
+        && result.replans === 0;
+
       // Show step outputs (the actual data returned by tools)
       if (result.outputs.length > 0) {
         for (const output of result.outputs) {
@@ -534,38 +778,36 @@ export class InfraWrapCLI {
             console.log(
               cyan(bold(`\n  ── ${output.action} ──`)),
             );
-            const dataStr = typeof output.data === "string"
-              ? output.data
-              : JSON.stringify(output.data, null, 2);
-            // Indent and truncate long output
-            const lines = dataStr.split("\n");
-            const maxLines = 40;
-            const shown = lines.slice(0, maxLines);
-            for (const line of shown) {
+            const formatted = formatStepData(output.action, output.data);
+            for (const line of formatted.split("\n")) {
               console.log(`  ${line}`);
-            }
-            if (lines.length > maxLines) {
-              console.log(dim(`  ... (${lines.length - maxLines} more lines)`));
             }
           }
         }
         console.log("");
       }
 
-      // Show final plan state
-      console.log(formatPlanTable(result.plan));
+      if (isSimpleRead) {
+        // Minimal one-line summary for simple reads
+        console.log(
+          dim(`  ✓ ${result.duration_ms}ms`),
+        );
+      } else {
+        // Show full plan table for multi-step / write operations
+        console.log(formatPlanTable(result.plan));
 
-      // Summary
-      const summaryColor = result.success ? green : red;
-      console.log(
-        summaryColor(
-          bold(
-            `  ${result.success ? "SUCCESS" : "FAILED"}  │  ` +
-              `${result.steps_completed} completed  │  ${result.steps_failed} failed  │  ` +
-              `${result.replans} replans  │  ${result.duration_ms}ms`,
+        // Summary
+        const summaryColor = result.success ? green : red;
+        console.log(
+          summaryColor(
+            bold(
+              `  ${result.success ? "SUCCESS" : "FAILED"}  │  ` +
+                `${result.steps_completed} completed  │  ${result.steps_failed} failed  │  ` +
+                `${result.replans} replans  │  ${result.duration_ms}ms`,
+            ),
           ),
-        ),
-      );
+        );
+      }
 
       if (result.errors.length > 0) {
         console.log(red("\n  Errors:"));

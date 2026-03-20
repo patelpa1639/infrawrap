@@ -34,10 +34,20 @@ export type ExternalApprovalHandler = (
   request: ApprovalRequest,
 ) => Promise<boolean>;
 
+export type PlanApprovalHandler = (
+  planId: string,
+  goal: string,
+  steps: { id: string; action: string; description: string; tier: string }[],
+  reasoning: string,
+) => Promise<boolean>;
+
 // ── ApprovalGate Class ──────────────────────────────────────
 
 export class ApprovalGate {
   private externalHandler: ExternalApprovalHandler | null = null;
+  private planApprovalHandler: PlanApprovalHandler | null = null;
+  /** Plan IDs that have been approved at plan-level — steps skip individual approval */
+  private approvedPlans: Set<string> = new Set();
 
   /**
    * Set an external approval handler (e.g., the CLI's readline).
@@ -50,6 +60,43 @@ export class ApprovalGate {
 
   clearExternalHandler(): void {
     this.externalHandler = null;
+  }
+
+  /**
+   * Set a plan-level approval handler (e.g., Telegram shows full plan).
+   * When a plan is approved at plan-level, individual steps skip approval.
+   */
+  setPlanApprovalHandler(handler: PlanApprovalHandler): void {
+    this.planApprovalHandler = handler;
+  }
+
+  /**
+   * Request plan-level approval. Returns true if approved.
+   * If no plan approval handler is set, falls back to auto-approve.
+   */
+  async requestPlanApproval(
+    planId: string,
+    goal: string,
+    steps: { id: string; action: string; description: string; tier: string }[],
+    reasoning: string,
+  ): Promise<boolean> {
+    if (this.planApprovalHandler) {
+      const approved = await this.planApprovalHandler(planId, goal, steps, reasoning);
+      if (approved) {
+        this.approvedPlans.add(planId);
+      }
+      return approved;
+    }
+    // No handler — auto-approve (backwards compatible)
+    this.approvedPlans.add(planId);
+    return true;
+  }
+
+  /**
+   * Check if a plan was already approved at plan-level.
+   */
+  isPlanApproved(planId: string): boolean {
+    return this.approvedPlans.has(planId);
   }
   /**
    * Determine whether an action at a given tier needs human approval

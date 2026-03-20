@@ -1,0 +1,16 @@
+[Unit]
+Description=InfraWrap — Autonomous Infrastructure Agent
+After=network.target
+
+[Service]
+Type=simple
+User=pranav
+WorkingDirectory=/home/pranav/infrawrap
+Environment=PATH=/home/pranav/.nvm/versions/node/v22.22.1/bin:/usr/bin:/bin
+EnvironmentFile=/home/pranav/infrawrap/.env
+ExecStart=/home/pranav/.nvm/versions/node/v22.22.1/bin/npx tsx src/index.ts full
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

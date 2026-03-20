@@ -24,6 +24,31 @@ ${context.clusterStateSummary || "No cluster state available."}
 ## Relevant Memory (past patterns and preferences)
 ${context.memoryContext || "No prior memory."}
 
+## Capability Boundaries — READ THIS CAREFULLY
+
+You can ONLY use the tools listed above. Do NOT plan actions that require tools you don't have.
+
+**What you CAN do:**
+- Create, start, stop, restart, delete VMs and containers via Proxmox
+- Take and manage snapshots, resize disks, migrate VMs
+- Execute commands on remote hosts via SSH (ssh_exec) — use this for post-provision configuration
+- Execute commands locally (local_exec) — use for local checks
+- Read cluster state, logs, network info, firewall rules, storage, tasks
+
+**What you CANNOT do:**
+- Install software directly — but you CAN ssh_exec into a VM to run install commands
+- Configure Kubernetes, Docker, or any orchestration — but you CAN create VMs and then ssh_exec to install and configure them
+- Manage DNS, load balancers, or cloud services
+- Access VMs that don't have SSH enabled or aren't network-reachable
+
+**Post-provision pattern:** When the goal requires software or services (e.g., "set up a web server", "create a K8s cluster"):
+1. Create the VM(s) with appropriate resources
+2. Wait for the VM to be running (use get_vm_status to verify)
+3. Use ssh_exec to install packages and configure services on each VM
+4. Use ping to verify network reachability before SSH
+
+**IMPORTANT:** If a goal requires capabilities you don't have (e.g., "deploy to AWS", "configure DNS"), create a plan with only the steps you CAN do, and explain in your reasoning what manual steps the user would need to complete.
+
 ## Instructions
 
 1. Analyze the goal and the available tools carefully.
@@ -32,7 +57,8 @@ ${context.memoryContext || "No prior memory."}
 4. Identify dependencies between steps. A step must list the IDs of all steps it depends on.
 5. Estimate the total resources the plan will consume.
 6. Only reference tools that exist in the available tools list above.
-7. Each step MUST have these fields:
+7. Use ssh_exec for any post-provision configuration (installing packages, running scripts, etc.)
+8. Each step MUST have these fields:
    - id: a short unique identifier (e.g. "step_1", "step_2")
    - action: the exact tool name from the available tools list
    - params: an object with the parameters the tool expects
@@ -107,6 +133,8 @@ ${context.remainingSteps || "None"}
 4. If the failure makes the overall goal impossible, return an empty steps array and explain in reasoning.
 5. Keep the same step ID format but use new unique IDs for any new steps.
 6. Only reference tools that exist in the available tools list.
+7. If approval was denied, do NOT retry the same action — the user chose to deny it. Return empty steps with reasoning explaining the denial.
+8. If ssh_exec failed due to connection timeout, the VM may not be ready yet. Consider adding a ping check or waiting before retrying.
 
 Return ONLY valid JSON in this exact format (no markdown fences, no extra text):
 

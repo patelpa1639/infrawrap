@@ -110,7 +110,8 @@ async function main() {
         },
         agentCore,
         registry,
-        eventBus
+        eventBus,
+        governance,
       );
       await bot.start();
       break;
@@ -196,7 +197,8 @@ async function main() {
           },
           agentCore,
           registry,
-          eventBus
+          eventBus,
+          governance,
         );
         await bot.start();
       }
@@ -219,6 +221,39 @@ async function main() {
       break;
     }
 
+    case "dev": {
+      // Dashboard + Telegram + CLI — all sharing the same event bus
+      // Type goals in the CLI and watch them stream live on the dashboard
+      console.log("Starting InfraWrap in dev mode (Dashboard + Telegram + CLI)...\n");
+
+      const dashboard = new DashboardServer(
+        config.dashboard.port,
+        agentCore,
+        registry,
+        eventBus,
+        governance.audit
+      );
+      await dashboard.start();
+
+      if (config.telegram.botToken) {
+        const bot = new InfraWrapBot(
+          {
+            botToken: config.telegram.botToken,
+            allowedUsers: config.telegram.allowedUsers,
+          },
+          agentCore,
+          registry,
+          eventBus,
+          governance,
+        );
+        await bot.start();
+      }
+
+      const cli = new InfraWrapCLI(agentCore, registry, eventBus, governance);
+      await cli.start();
+      break;
+    }
+
     default: {
       // Treat as one-shot command
       const cli = new InfraWrapCLI(agentCore, registry, eventBus, governance);
@@ -238,7 +273,8 @@ Usage:
   infrawrap dashboard           Start web dashboard
   infrawrap mcp                 Start MCP server (for Claude Code)
   infrawrap autopilot           Start autopilot daemon + dashboard
-  infrawrap full                Start all services
+  infrawrap dev                 CLI + Dashboard + Telegram (best for testing)
+  infrawrap full                Start all services (no CLI)
 
 Environment:
   PROXMOX_HOST                  Proxmox VE host (default: localhost)

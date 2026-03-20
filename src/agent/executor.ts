@@ -54,7 +54,7 @@ export class Executor {
    * Execute a single plan step with full governance checks,
    * state capture, event emission, and audit logging.
    */
-  async executeStep(step: PlanStep, mode: AgentMode): Promise<StepResult> {
+  async executeStep(step: PlanStep, mode: AgentMode, planId?: string): Promise<StepResult> {
     const startTime = Date.now();
     const timestamp = new Date().toISOString();
 
@@ -72,7 +72,7 @@ export class Executor {
         "Circuit breaker is tripped — too many consecutive failures",
       );
       this.emitStepFailed(step, result);
-      this.logAudit(step, mode, "blocked", result, "Circuit breaker tripped");
+      this.logAudit(step, mode, "blocked", result, planId, "Circuit breaker tripped");
       return result;
     }
 
@@ -101,7 +101,7 @@ export class Executor {
         `Blocked by governance: ${evaluation.reason}`,
       );
       this.emitStepFailed(step, result);
-      this.logAudit(step, mode, "blocked", result, evaluation.reason);
+      this.logAudit(step, mode, "blocked", result, planId, evaluation.reason);
       return result;
     }
 
@@ -123,7 +123,7 @@ export class Executor {
           },
         });
         this.emitStepFailed(step, result);
-        this.logAudit(step, mode, "blocked", result, "Approval not granted");
+        this.logAudit(step, mode, "blocked", result, planId, "Approval not granted");
         return result;
       }
     }
@@ -151,7 +151,7 @@ export class Executor {
       );
       this.governance.circuitBreaker.track(false);
       this.emitStepFailed(step, result);
-      this.logAudit(step, mode, "failed", result);
+      this.logAudit(step, mode, "failed", result, planId);
       return result;
     }
 
@@ -180,7 +180,7 @@ export class Executor {
 
       this.governance.circuitBreaker.track(true);
       this.emitStepCompleted(step, result);
-      this.logAudit(step, mode, "success", result);
+      this.logAudit(step, mode, "success", result, planId);
       return result;
     } else {
       const result: StepResult = {
@@ -195,7 +195,7 @@ export class Executor {
 
       this.governance.circuitBreaker.track(false);
       this.emitStepFailed(step, result);
-      this.logAudit(step, mode, "failed", result);
+      this.logAudit(step, mode, "failed", result, planId);
       return result;
     }
   }
@@ -224,6 +224,7 @@ export class Executor {
         step_id: step.id,
         action: step.action,
         duration_ms: result.duration_ms,
+        output: result.data,
       },
     });
   }
@@ -246,6 +247,7 @@ export class Executor {
     mode: AgentMode,
     resultStatus: AuditEntry["result"],
     result: StepResult,
+    planId?: string,
     reason?: string,
   ): void {
     const entry: AuditEntry = {
@@ -260,6 +262,7 @@ export class Executor {
       state_before: result.state_before,
       state_after: result.state_after,
       step_id: step.id,
+      plan_id: planId,
       duration_ms: result.duration_ms,
     };
 

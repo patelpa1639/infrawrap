@@ -129,18 +129,46 @@ export class AgentCore {
         goal: goal.description,
         step_count: plan.steps.length,
         reasoning: plan.reasoning,
+        mode: goal.mode,
+        steps: plan.steps.map((s) => ({
+          id: s.id,
+          action: s.action,
+          description: s.description,
+          tier: s.tier,
+        })),
       },
     });
 
-    // 5. If mode requires plan approval, request it
-    if (this.requiresPlanApproval(goal.mode)) {
+    // 5. Request plan-level approval
+    if (this.requiresPlanApproval(goal.mode, plan)) {
       this.eventBus.emit({
         type: "approval_requested",
         timestamp: new Date().toISOString(),
         data: { plan_id: plan.id, type: "plan_approval", mode: goal.mode },
       });
-      // In a full implementation, we would await approval here.
-      // For now, we mark the plan as approved and continue.
+
+      const approvalGate = (this.governance as unknown as { approvalGate: { requestPlanApproval: (planId: string, goal: string, steps: { id: string; action: string; description: string; tier: string }[], reasoning: string) => Promise<boolean> } }).approvalGate;
+      const planApproved = await approvalGate.requestPlanApproval(
+        plan.id,
+        goal.description,
+        plan.steps.map((s) => ({ id: s.id, action: s.action, description: s.description, tier: s.tier })),
+        plan.reasoning,
+      );
+
+      if (!planApproved) {
+        plan.status = "failed";
+        return {
+          success: false,
+          plan,
+          steps_completed: 0,
+          steps_failed: 0,
+          replans: 0,
+          duration_ms: Date.now() - startTime,
+          errors: ["Plan denied by user"],
+          outputs,
+        };
+      }
+
       plan.status = "approved";
       this.eventBus.emit({
         type: "plan_approved",
@@ -172,7 +200,9 @@ export class AgentCore {
       for (const step of readySteps) {
         step.status = "running";
 
-        const result = await this.executor.executeStep(step, goal.mode);
+        // Inject plan ID into params so governance can check plan-level approval
+        step.params._plan_id = activePlan.id;
+        const result = await this.executor.executeStep(step, goal.mode, activePlan.id);
         step.result = result;
 
         // Capture step output for the CLI/frontends
@@ -242,6 +272,15 @@ export class AgentCore {
                 new_plan_id: newPlan.id,
                 failed_step_id: step.id,
                 reasoning: newPlan.reasoning,
+                step_count: newPlan.steps.length,
+                goal: goal.description,
+                mode: goal.mode,
+                steps: newPlan.steps.map((s) => ({
+                  id: s.id,
+                  action: s.action,
+                  description: s.description,
+                  tier: s.tier,
+                })),
               },
             });
 
@@ -403,9 +442,20 @@ export class AgentCore {
 
   // ── Private Helpers ─────────────────────────────────────────
 
-  private requiresPlanApproval(mode: AgentMode): boolean {
-    // Build mode always requires plan approval; watch mode does not
-    return mode === "build";
+  private requiresPlanApproval(mode: AgentMode, plan?: Plan): boolean {
+    // Build mode requires plan approval — but only if the plan
+    // contains write/destructive steps. Pure read-only plans
+    // (e.g. "list VMs") are auto-approved to avoid friction.
+    if (mode !== "build") return false;
+
+    if (plan) {
+      const hasWriteSteps = plan.steps.some(
+        (s) => s.tier !== "read",
+      );
+      if (!hasWriteSteps) return false;
+    }
+
+    return true;
   }
 
   private skipRemainingSteps(plan: Plan, executed: Set<string>): void {

@@ -135,6 +135,19 @@ export class GovernanceEngine {
       };
     }
 
+    // 6b. If the plan was already approved at plan-level, skip step-level approval
+    //     (except for destructive actions which always require explicit approval)
+    const planId = params._plan_id as string | undefined;
+    if (planId && tier !== "destructive" && this.approvalGate.isPlanApproved(planId)) {
+      return {
+        allowed: true,
+        tier,
+        needs_approval: false,
+        reason: `Action "${action}" (${tier}) covered by plan-level approval.`,
+        approval: this.approvalGate.autoApprove(randomUUID()),
+      };
+    }
+
     // 7. Request human approval
     const approvalRequest = {
       id: randomUUID(),
