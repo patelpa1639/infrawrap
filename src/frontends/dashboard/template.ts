@@ -3420,6 +3420,7 @@ function renderEvent(event) {
   const d = event.data || {};
   const ts = new Date(event.timestamp).toLocaleTimeString('en-US', { hour12: false });
   const ev = formatEvent(event);
+  if (!ev) return; // suppressed event
 
   // Determine which group this belongs to
   if (event.type === 'plan_created') {
@@ -3549,11 +3550,138 @@ function formatEvent(event) {
         title: 'Investigation complete <span class="event-action">' + (d.findings_count || 0) + ' findings</span>',
         detail: d.root_cause ? 'Root cause: ' + d.root_cause.slice(0, 120) : null,
       };
+    // ── Incident Events ──
+    case 'incident_opened':
+      return {
+        iconClass: 'warn', icon: '&#9888;',
+        title: 'Incident opened',
+        detail: (d.anomaly_message || d.message || 'Anomaly detected') + (d.severity ? ' — ' + d.severity : ''),
+      };
+    case 'incident_action':
+      return {
+        iconClass: d.success ? 'ok' : 'err', icon: d.success ? '&#10003;' : '&#10007;',
+        title: d.success ? 'Healing action succeeded' : 'Healing action failed',
+        detail: d.action || d.detail || null,
+        isError: !d.success,
+      };
+    case 'incident_resolved':
+      return {
+        iconClass: 'ok', icon: '&#10003;',
+        title: 'Incident resolved',
+        detail: d.resolution || d.message || 'All actions completed successfully',
+      };
+    case 'incident_failed':
+      return {
+        iconClass: 'err', icon: '&#10007;',
+        title: 'Incident failed',
+        detail: d.error || d.message || 'Healing was unsuccessful',
+        isError: true,
+      };
+
+    // ── Healing Events ──
+    case 'healing_started':
+      return {
+        iconClass: 'step', icon: '&#9889;',
+        title: 'Healing started',
+        detail: d.playbook_name ? 'Playbook: ' + d.playbook_name : (d.playbook_id || null),
+      };
+    case 'healing_completed':
+      return {
+        iconClass: 'ok', icon: '&#10003;',
+        title: 'Healing completed',
+        detail: d.playbook_name || d.message || null,
+      };
+    case 'healing_failed':
+      return {
+        iconClass: 'err', icon: '&#10007;',
+        title: 'Healing failed',
+        detail: d.error || d.message || null,
+        isError: true,
+      };
+    case 'healing_escalated':
+      return {
+        iconClass: 'err', icon: '&#9888;',
+        title: 'Healing escalated — manual intervention needed',
+        detail: d.reason || null,
+        isError: true,
+      };
+    case 'healing_paused':
+      return {
+        iconClass: 'warn', icon: '&#9724;',
+        title: 'Healing paused — circuit breaker triggered',
+        detail: d.reason || 'Too many consecutive failures',
+      };
+    case 'playbook_matched':
+      return {
+        iconClass: 'info', icon: '&#128214;',
+        title: 'Playbook matched: <span class="event-action">' + escapeHtml((d.playbook_names || [])[0] || d.playbook_id || '?') + '</span>',
+        detail: d.anomaly_metric ? d.anomaly_metric + ' — ' + (d.anomaly_severity || '') : null,
+      };
+    case 'playbook_executed':
+      return {
+        iconClass: d.success ? 'ok' : 'err', icon: d.success ? '&#10003;' : '&#10007;',
+        title: (d.success ? 'Playbook succeeded' : 'Playbook failed'),
+        detail: d.playbook_id || null,
+        isError: !d.success,
+      };
+    case 'playbook_cooldown':
+      return {
+        iconClass: 'info', icon: '&#9202;',
+        title: 'Playbook on cooldown',
+        detail: (d.playbook_name || d.playbook_id) + ' — skipped (too recent)',
+      };
+
+    // ── Chaos Events ──
+    case 'chaos_simulated':
+      return {
+        iconClass: 'info', icon: '&#127922;',
+        title: 'Chaos simulated — <span class="event-action">' + (d.total_affected || 0) + ' VM(s) affected</span>',
+        detail: 'Risk: ' + (d.risk_score || 0) + '/100 · Recovery: ~' + (d.predicted_recovery_s || '?') + 's',
+      };
+    case 'chaos_started':
+      return {
+        iconClass: 'warn', icon: '&#9889;',
+        title: 'Chaos started: <span class="event-action">' + escapeHtml(d.scenario_name || d.scenario_id || '') + '</span>',
+        detail: 'Severity: ' + (d.severity || 'medium'),
+      };
+    case 'chaos_recovery_detected':
+      return {
+        iconClass: 'info', icon: '&#128260;',
+        title: 'Recovery in progress',
+        detail: d.message || 'Failures injected, waiting for healing',
+      };
+    case 'chaos_completed':
+      return {
+        iconClass: d.verdict === 'pass' ? 'ok' : (d.verdict === 'partial' ? 'warn' : 'err'),
+        icon: d.verdict === 'pass' ? '&#10003;' : (d.verdict === 'partial' ? '&#9888;' : '&#10007;'),
+        title: 'Chaos completed — <span class="event-action">' + ((d.verdict || 'unknown').toUpperCase()) + '</span>',
+        detail: 'Resilience: ' + (d.resilience_pct || 0) + '% · Actual recovery: ' + (d.actual_recovery_s || '?') + 's vs predicted ' + (d.predicted_recovery_s || '?') + 's',
+      };
+    case 'chaos_failed':
+      return {
+        iconClass: 'err', icon: '&#10007;',
+        title: 'Chaos failed',
+        detail: d.error || 'Scenario execution encountered an error',
+        isError: true,
+      };
+
+    // ── Health Events ──
+    case 'health_check':
+      return {
+        iconClass: 'info', icon: '&#9829;',
+        title: (d.nodes ? d.nodes.online + '/' + d.nodes.total + ' nodes' : '') + ' · ' + (d.vms ? d.vms.running + ' running VMs' : ''),
+        detail: d.resources ? 'CPU ' + (d.resources.cpu_usage_pct || 0).toFixed(1) + '% · RAM ' + (d.resources.ram_usage_pct || 0).toFixed(1) + '%' : null,
+      };
+    case 'healing_tick':
+      return null; // suppress noisy tick events
+    case 'metric_recorded':
+      return null; // suppress metric batch events
+
     default:
       return {
         iconClass: 'info', icon: '&#8226;',
         title: event.type.replace(/_/g, ' '),
-        detail: JSON.stringify(d).slice(0, 120),
+        detail: null,
       };
   }
 }
