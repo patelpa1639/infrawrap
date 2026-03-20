@@ -340,7 +340,21 @@ export type AgentEventType =
   | "circuit_breaker_tripped"
   | "alert_fired"
   | "alert_resolved"
-  | "health_check";
+  | "health_check"
+  | "incident_opened"
+  | "incident_action"
+  | "incident_resolved"
+  | "incident_failed"
+  | "metric_recorded"
+  | "healing_tick"
+  | "healing_started"
+  | "healing_completed"
+  | "healing_failed"
+  | "healing_escalated"
+  | "healing_paused"
+  | "playbook_matched"
+  | "playbook_executed"
+  | "playbook_cooldown";
 
 export interface AgentEvent {
   type: AgentEventType;

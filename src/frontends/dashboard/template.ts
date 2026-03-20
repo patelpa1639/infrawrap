@@ -1000,6 +1000,382 @@ tbody tr:last-child td {
   color: var(--text-secondary);
 }
 
+/* ── Incidents ──────────────────────────────────────── */
+.incidents-section {
+  padding: 0;
+}
+
+.incidents-section-title {
+  font-size: 0.71rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 16px 24px 8px;
+}
+
+.incident-card {
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 14px 24px;
+  cursor: pointer;
+  transition: background 0.12s;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.incident-card:hover {
+  background: var(--bg-hover);
+}
+
+.incident-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.incident-severity {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.64rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.incident-severity.critical {
+  background: var(--red-muted);
+  color: var(--red);
+}
+
+.incident-severity.warning {
+  background: var(--amber-muted);
+  color: var(--amber);
+}
+
+.incident-status-pill {
+  font-size: 0.60rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.incident-status-pill.open {
+  background: var(--red-muted);
+  color: var(--red);
+}
+
+.incident-status-pill.healing {
+  background: var(--blue-muted);
+  color: var(--blue);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.incident-status-pill.resolved {
+  background: var(--teal-muted);
+  color: var(--teal);
+}
+
+.incident-status-pill.failed {
+  background: var(--red-muted);
+  color: var(--red);
+}
+
+.incident-desc {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.incident-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+}
+
+.incident-metric-val {
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.incident-playbook {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--blue);
+}
+
+.incident-playbook .spinner {
+  width: 10px;
+  height: 10px;
+  border-width: 1.5px;
+}
+
+.incident-time-ago {
+  margin-left: auto;
+  font-family: var(--font-mono);
+}
+
+/* Incident compact row (resolved/failed) */
+.incident-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background 0.12s;
+  font-size: 0.75rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.incident-row:hover {
+  background: var(--bg-hover);
+}
+
+.incident-sev-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.incident-sev-dot.critical { background: var(--red); }
+.incident-sev-dot.warning { background: var(--amber); }
+
+.incident-row-desc {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.incident-row-duration {
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  font-size: 0.68rem;
+  flex-shrink: 0;
+}
+
+.incident-row-resolution {
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.incident-row-result {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.incident-row-result.resolved { background: var(--teal); }
+.incident-row-result.failed { background: var(--red); }
+
+.incident-pattern-tag {
+  font-size: 0.57rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--purple-muted);
+  color: var(--purple);
+  flex-shrink: 0;
+}
+
+/* Incident Timeline (expanded) */
+.incident-timeline {
+  padding: 4px 24px 16px 24px;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.timeline-entry {
+  display: flex;
+  align-items: stretch;
+  position: relative;
+}
+
+.timeline-gutter {
+  width: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.timeline-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  z-index: 2;
+  flex-shrink: 0;
+  border: 2px solid var(--border);
+  background: var(--bg-primary);
+}
+
+.timeline-dot.detected {
+  border-color: var(--red);
+  background: var(--red-muted);
+  color: var(--red);
+}
+
+.timeline-dot.action {
+  border-color: var(--blue);
+  background: var(--blue-muted);
+  color: var(--blue);
+}
+
+.timeline-dot.action.success {
+  border-color: var(--teal);
+  background: var(--teal-muted);
+  color: var(--teal);
+}
+
+.timeline-dot.action.fail {
+  border-color: var(--red);
+  background: var(--red-muted);
+  color: var(--red);
+}
+
+.timeline-dot.resolved {
+  border-color: var(--teal);
+  background: var(--teal-muted);
+  color: var(--teal);
+}
+
+.timeline-dot.failed {
+  border-color: var(--red);
+  background: var(--red-muted);
+  color: var(--red);
+}
+
+.timeline-line {
+  width: 2px;
+  flex: 1;
+  background: var(--border);
+  min-height: 8px;
+}
+
+.timeline-entry:last-child .timeline-line { display: none; }
+
+.timeline-content {
+  flex: 1;
+  padding: 0 0 12px 10px;
+  min-width: 0;
+}
+
+.timeline-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 1px;
+}
+
+.timeline-detail {
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+}
+
+.timeline-time {
+  font-size: 0.64rem;
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  margin-top: 1px;
+}
+
+.timeline-duration-badge {
+  display: inline-block;
+  font-size: 0.60rem;
+  font-family: var(--font-mono);
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--teal-muted);
+  color: var(--teal);
+  margin-left: 6px;
+}
+
+.timeline-duration-badge.failed {
+  background: var(--red-muted);
+  color: var(--red);
+}
+
+/* Incident tab badge */
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  font-size: 0.57rem;
+  font-weight: 700;
+  background: var(--red);
+  color: #fff;
+  margin-left: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tab-badge.zero {
+  background: var(--bg-active);
+  color: var(--text-tertiary);
+}
+
+/* Healing warning banners */
+.healing-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  font-size: 0.75rem;
+  animation: fadeIn 0.3s ease-out;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.healing-banner.paused {
+  background: var(--amber-muted);
+  color: var(--amber);
+}
+
+.healing-banner.escalated {
+  background: var(--red-muted);
+  color: var(--red);
+}
+
+.incidents-empty {
+  text-align: center;
+  color: var(--text-tertiary);
+  padding: 40px 24px;
+  font-size: 0.82rem;
+}
+
+.incidents-empty .empty-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  opacity: 0.4;
+}
+
 /* ── Governance / Audit ──────────────────────────────── */
 .gov-grid {
   display: grid;
@@ -1327,6 +1703,10 @@ tbody tr:last-child td {
       <div class="tab active" data-tab="plan">Active Plan</div>
       <div class="tab" data-tab="resources">Resources</div>
       <div class="tab" data-tab="nodes">Nodes</div>
+      <div class="tab" data-tab="incidents">
+        <svg style="width:13px;height:13px;vertical-align:-2px;margin-right:3px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Incidents<span class="tab-badge zero" id="incidentTabBadge">0</span>
+      </div>
       <div class="tab" data-tab="governance">Governance</div>
     </div>
 
@@ -1403,6 +1783,29 @@ tbody tr:last-child td {
         <div class="card-body">
           <div class="nodes-grid" id="nodesGrid">
             <div style="color:var(--text-tertiary);font-size:0.78rem">Loading node data...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Incidents -->
+    <div class="tab-panel" id="tab-incidents">
+      <div id="healingBanners"></div>
+      <div class="incidents-section">
+        <div class="incidents-section-title">Active Incidents</div>
+        <div id="activeIncidents">
+          <div class="incidents-empty">
+            <div class="empty-icon">&#9711;</div>
+            No active incidents — all clear
+          </div>
+        </div>
+      </div>
+      <div class="incidents-section" style="border-top:1px solid var(--border)">
+        <div class="incidents-section-title">Recent Incidents</div>
+        <div id="recentIncidents">
+          <div class="incidents-empty">
+            <div class="empty-icon">&#9711;</div>
+            No recent incidents
           </div>
         </div>
       </div>
@@ -1489,6 +1892,14 @@ const state = {
   failures: 0,
   totalActions: 0,
   currentPlanId: null,
+  incidents: {
+    active: [],   // open or healing incidents
+    recent: [],   // resolved or failed incidents (last 20)
+    patterns: [], // learned patterns
+    expanded: {}, // id -> true if timeline is expanded
+    timelines: {}, // id -> timeline entries (cached)
+  },
+  healingBanners: [], // { type: 'paused'|'escalated', message, id }
 };
 
 // ── SSE Connection ─────────────────────────────────────
@@ -1515,6 +1926,17 @@ function connect() {
   evtSource.addEventListener('circuit_breaker_tripped', (e) => handleEvent(JSON.parse(e.data)));
   evtSource.addEventListener('investigation_started', (e) => handleEvent(JSON.parse(e.data)));
   evtSource.addEventListener('investigation_complete', (e) => handleEvent(JSON.parse(e.data)));
+
+  // Incident & healing events
+  evtSource.addEventListener('incident_opened', (e) => handleEvent(JSON.parse(e.data)));
+  evtSource.addEventListener('incident_action', (e) => handleEvent(JSON.parse(e.data)));
+  evtSource.addEventListener('incident_resolved', (e) => handleEvent(JSON.parse(e.data)));
+  evtSource.addEventListener('incident_failed', (e) => handleEvent(JSON.parse(e.data)));
+  evtSource.addEventListener('healing_started', (e) => handleEvent(JSON.parse(e.data)));
+  evtSource.addEventListener('healing_completed', (e) => handleEvent(JSON.parse(e.data)));
+  evtSource.addEventListener('healing_failed', (e) => handleEvent(JSON.parse(e.data)));
+  evtSource.addEventListener('healing_paused', (e) => handleEvent(JSON.parse(e.data)));
+  evtSource.addEventListener('healing_escalated', (e) => handleEvent(JSON.parse(e.data)));
 
   evtSource.onerror = () => {
     state.connected = false;
@@ -1577,6 +1999,42 @@ function handleEvent(event) {
       Object.values(state.planSteps).forEach(s => {
         if (s.status === 'pending') s.status = 'skipped';
       });
+      break;
+
+    case 'incident_opened':
+      handleIncidentOpened(d);
+      break;
+
+    case 'incident_action':
+      handleIncidentAction(d);
+      break;
+
+    case 'incident_resolved':
+      handleIncidentResolved(d);
+      break;
+
+    case 'incident_failed':
+      handleIncidentFailed(d);
+      break;
+
+    case 'healing_started':
+      handleHealingStarted(d);
+      break;
+
+    case 'healing_completed':
+      handleHealingCompleted(d);
+      break;
+
+    case 'healing_failed':
+      handleHealingFailed(d);
+      break;
+
+    case 'healing_paused':
+      handleHealingPaused(d);
+      break;
+
+    case 'healing_escalated':
+      handleHealingEscalated(d);
       break;
   }
 
@@ -2181,8 +2639,9 @@ document.querySelectorAll('.tab').forEach(tab => {
     tab.classList.add('active');
     document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
 
-    // Lazy load audit
+    // Lazy load
     if (tab.dataset.tab === 'governance') loadAudit();
+    if (tab.dataset.tab === 'incidents') loadIncidents();
   });
 });
 
@@ -2372,6 +2831,327 @@ function formatDuration(ms) {
   return s + 's';
 }
 
+// ── Incidents ──────────────────────────────────────────
+
+async function loadIncidents() {
+  try {
+    const data = await fetch('/api/incidents').then(r => r.json());
+    if (data.error) return;
+    state.incidents.active = (data.open || []).filter(i => i.status === 'open' || i.status === 'healing');
+    // Recent = resolved/failed from the full list, excluding active
+    const activeIds = new Set(state.incidents.active.map(i => i.id));
+    state.incidents.recent = (data.recent || []).filter(i => !activeIds.has(i.id)).slice(0, 20);
+    state.incidents.patterns = data.patterns || [];
+    renderIncidents();
+    updateIncidentBadge();
+  } catch {}
+}
+
+function handleIncidentOpened(d) {
+  const incident = {
+    id: d.incident_id,
+    anomaly_type: d.anomaly_type,
+    severity: d.severity,
+    metric: d.metric,
+    labels: d.labels || {},
+    trigger_value: d.trigger_value,
+    description: d.description,
+    playbook_id: d.playbook_id,
+    status: d.playbook_id ? 'healing' : 'open',
+    detected_at: new Date().toISOString(),
+    actions_taken: [],
+  };
+  // Remove if already present
+  state.incidents.active = state.incidents.active.filter(i => i.id !== incident.id);
+  state.incidents.active.unshift(incident);
+  renderIncidents();
+  updateIncidentBadge();
+}
+
+function handleIncidentAction(d) {
+  const inc = state.incidents.active.find(i => i.id === d.incident_id);
+  if (inc) {
+    inc.status = 'healing';
+    if (!inc.actions_taken) inc.actions_taken = [];
+    inc.actions_taken.push({ action: d.action, timestamp: new Date().toISOString(), success: d.success, details: d.details });
+    // Invalidate cached timeline
+    delete state.incidents.timelines[d.incident_id];
+    renderIncidents();
+  }
+}
+
+function handleIncidentResolved(d) {
+  const idx = state.incidents.active.findIndex(i => i.id === d.incident_id);
+  if (idx !== -1) {
+    const inc = state.incidents.active.splice(idx, 1)[0];
+    inc.status = 'resolved';
+    inc.resolution = d.resolution;
+    inc.duration_ms = d.duration_ms;
+    inc.resolved_at = new Date().toISOString();
+    state.incidents.recent.unshift(inc);
+    if (state.incidents.recent.length > 20) state.incidents.recent.pop();
+  }
+  delete state.incidents.timelines[d.incident_id];
+  renderIncidents();
+  updateIncidentBadge();
+}
+
+function handleIncidentFailed(d) {
+  const idx = state.incidents.active.findIndex(i => i.id === d.incident_id);
+  if (idx !== -1) {
+    const inc = state.incidents.active.splice(idx, 1)[0];
+    inc.status = 'failed';
+    inc.resolution = d.reason;
+    inc.duration_ms = d.duration_ms;
+    inc.resolved_at = new Date().toISOString();
+    state.incidents.recent.unshift(inc);
+    if (state.incidents.recent.length > 20) state.incidents.recent.pop();
+  }
+  delete state.incidents.timelines[d.incident_id];
+  renderIncidents();
+  updateIncidentBadge();
+}
+
+function handleHealingStarted(d) {
+  const inc = state.incidents.active.find(i => i.id === d.incident_id);
+  if (inc) {
+    inc.status = 'healing';
+    inc.playbook_id = d.playbook_id || inc.playbook_id;
+    renderIncidents();
+  }
+}
+
+function handleHealingCompleted(d) {
+  // Treat same as resolved
+  handleIncidentResolved(d);
+}
+
+function handleHealingFailed(d) {
+  handleIncidentFailed(d);
+}
+
+function handleHealingPaused(d) {
+  state.healingBanners = state.healingBanners.filter(b => b.id !== d.incident_id);
+  state.healingBanners.push({ type: 'paused', message: d.reason || 'Healing paused', id: d.incident_id });
+  renderHealingBanners();
+}
+
+function handleHealingEscalated(d) {
+  state.healingBanners = state.healingBanners.filter(b => b.id !== d.incident_id);
+  state.healingBanners.push({ type: 'escalated', message: d.reason || 'Incident escalated — manual intervention required', id: d.incident_id });
+  renderHealingBanners();
+}
+
+function updateIncidentBadge() {
+  const badge = document.getElementById('incidentTabBadge');
+  if (!badge) return;
+  const count = state.incidents.active.length;
+  badge.textContent = String(count);
+  badge.className = 'tab-badge' + (count === 0 ? ' zero' : '');
+}
+
+function renderHealingBanners() {
+  const el = document.getElementById('healingBanners');
+  if (!el) return;
+  if (state.healingBanners.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = state.healingBanners.map(b =>
+    '<div class="healing-banner ' + b.type + '">' +
+      (b.type === 'paused' ? '&#9888;' : '&#9760;') +
+      ' <span>' + escapeHtml(b.message) + '</span>' +
+    '</div>'
+  ).join('');
+}
+
+function renderIncidents() {
+  renderActiveIncidents();
+  renderRecentIncidents();
+}
+
+function renderActiveIncidents() {
+  const el = document.getElementById('activeIncidents');
+  if (!el) return;
+
+  if (state.incidents.active.length === 0) {
+    el.innerHTML = '<div class="incidents-empty"><div class="empty-icon">&#9711;</div>No active incidents \\u2014 all clear</div>';
+    return;
+  }
+
+  el.innerHTML = state.incidents.active.map(inc => {
+    const ago = timeAgo(inc.detected_at);
+    const expanded = state.incidents.expanded[inc.id];
+
+    let html = '<div class="incident-card" onclick="toggleIncidentTimeline(\\'' + inc.id + '\\')">';
+    html += '<div class="incident-card-header">';
+    html += '<span class="incident-severity ' + inc.severity + '">' + inc.severity + '</span>';
+    html += '<span class="incident-desc">' + escapeHtml(inc.description) + '</span>';
+    html += '<span class="incident-status-pill ' + inc.status + '">' + inc.status + '</span>';
+    html += '</div>';
+
+    html += '<div class="incident-card-meta">';
+    html += '<span class="incident-metric-val">' + escapeHtml(inc.metric || '') + ': ' + (inc.trigger_value !== undefined ? inc.trigger_value : '-') + '</span>';
+
+    if (inc.status === 'healing' && inc.playbook_id) {
+      html += '<span class="incident-playbook"><span class="spinner"></span> ' + escapeHtml(inc.playbook_id) + '</span>';
+    }
+
+    html += '<span class="incident-time-ago">' + ago + '</span>';
+    html += '</div>';
+
+    if (expanded) {
+      html += renderIncidentTimeline(inc);
+    }
+
+    html += '</div>';
+    return html;
+  }).join('');
+}
+
+function renderRecentIncidents() {
+  const el = document.getElementById('recentIncidents');
+  if (!el) return;
+
+  if (state.incidents.recent.length === 0) {
+    el.innerHTML = '<div class="incidents-empty"><div class="empty-icon">&#9711;</div>No recent incidents</div>';
+    return;
+  }
+
+  el.innerHTML = state.incidents.recent.map(inc => {
+    const dur = inc.duration_ms ? formatDuration(inc.duration_ms) : '-';
+    const expanded = state.incidents.expanded[inc.id];
+    const hasPattern = !!inc.pattern_id;
+
+    let html = '<div>';
+    html += '<div class="incident-row" onclick="toggleIncidentTimeline(\\'' + inc.id + '\\')">';
+    html += '<span class="incident-sev-dot ' + inc.severity + '"></span>';
+    html += '<span class="incident-row-desc">' + escapeHtml(inc.description) + '</span>';
+    if (hasPattern) {
+      html += '<span class="incident-pattern-tag">Pattern</span>';
+    }
+    html += '<span class="incident-row-duration">' + dur + '</span>';
+    html += '<span class="incident-row-resolution">' + escapeHtml(inc.resolution || '') + '</span>';
+    html += '<span class="incident-row-result ' + inc.status + '"></span>';
+    html += '</div>';
+
+    if (expanded) {
+      html += renderIncidentTimeline(inc);
+    }
+
+    html += '</div>';
+    return html;
+  }).join('');
+}
+
+function renderIncidentTimeline(inc) {
+  // Build timeline from local data
+  const entries = [];
+
+  entries.push({
+    timestamp: inc.detected_at,
+    event: 'detected',
+    detail: inc.description,
+  });
+
+  if (inc.actions_taken) {
+    inc.actions_taken.forEach(a => {
+      entries.push({
+        timestamp: a.timestamp,
+        event: 'action',
+        detail: a.details || a.action,
+        success: a.success,
+      });
+    });
+  }
+
+  if (inc.status === 'resolved' && inc.resolved_at) {
+    entries.push({
+      timestamp: inc.resolved_at,
+      event: 'resolved',
+      detail: inc.resolution || 'Resolved',
+    });
+  } else if (inc.status === 'failed' && inc.resolved_at) {
+    entries.push({
+      timestamp: inc.resolved_at,
+      event: 'failed',
+      detail: inc.resolution || 'Failed',
+    });
+  }
+
+  entries.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+  if (entries.length === 0) return '';
+
+  const firstTime = new Date(entries[0].timestamp).getTime();
+  const lastTime = entries.length > 1 ? new Date(entries[entries.length - 1].timestamp).getTime() : firstTime;
+  const totalDuration = lastTime - firstTime;
+
+  let html = '<div class="incident-timeline">';
+  entries.forEach((entry, idx) => {
+    const time = new Date(entry.timestamp).toLocaleTimeString();
+    const isLast = idx === entries.length - 1;
+
+    let dotClass = 'timeline-dot ' + entry.event;
+    let icon = '';
+    let label = '';
+
+    switch (entry.event) {
+      case 'detected':
+        icon = '!';
+        label = 'Anomaly Detected';
+        break;
+      case 'action':
+        dotClass += entry.success ? ' success' : (entry.success === false ? ' fail' : '');
+        icon = entry.success ? '&#10003;' : (entry.success === false ? '&#10007;' : '&#9889;');
+        label = 'Action' + (entry.success === false ? ' (Failed)' : entry.success ? ' (Success)' : '');
+        break;
+      case 'resolved':
+        icon = '&#10003;';
+        label = 'Resolved';
+        break;
+      case 'failed':
+        icon = '&#10007;';
+        label = 'Failed';
+        break;
+    }
+
+    html += '<div class="timeline-entry">';
+    html += '<div class="timeline-gutter">';
+    html += '<div class="' + dotClass + '">' + icon + '</div>';
+    if (!isLast) html += '<div class="timeline-line"></div>';
+    html += '</div>';
+    html += '<div class="timeline-content">';
+    html += '<div class="timeline-label">' + label + '</div>';
+    html += '<div class="timeline-detail">' + escapeHtml(entry.detail) + '</div>';
+    html += '<div class="timeline-time">' + time;
+    if (isLast && totalDuration > 0) {
+      const badgeClass = entry.event === 'failed' ? ' failed' : '';
+      html += '<span class="timeline-duration-badge' + badgeClass + '">Duration: ' + formatDuration(totalDuration) + '</span>';
+    }
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function toggleIncidentTimeline(id) {
+  state.incidents.expanded[id] = !state.incidents.expanded[id];
+  renderIncidents();
+}
+
+function timeAgo(isoStr) {
+  if (!isoStr) return '-';
+  const diff = Date.now() - new Date(isoStr).getTime();
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return s + 's ago';
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  const d = Math.floor(h / 24);
+  return d + 'd ago';
+}
+
 // ── Polling ────────────────────────────────────────────
 async function pollCluster() {
   try {
@@ -2383,8 +3163,10 @@ async function pollCluster() {
 // ── Init ───────────────────────────────────────────────
 connect();
 pollCluster();
+loadIncidents();
 setInterval(pollCluster, 10000);
 setInterval(updateGov, 5000);
+setInterval(function() { updateIncidentBadge(); renderActiveIncidents(); }, 15000); // refresh time-ago
 </script>
 </body>
 </html>`;

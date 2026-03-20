@@ -18,6 +18,7 @@ import { InfraWrapBot } from "./frontends/telegram.js";
 import { DashboardServer } from "./frontends/dashboard/server.js";
 import { InfraWrapMCP } from "./frontends/mcp.js";
 import { AutopilotDaemon } from "./autopilot/daemon.js";
+import { HealingOrchestrator } from "./healing/orchestrator.js";
 import { join } from "path";
 import { mkdirSync } from "fs";
 
@@ -217,6 +218,25 @@ async function main() {
         autopilot.start();
       }
 
+      // Self-healing orchestrator
+      const healer = new HealingOrchestrator({
+        agentCore,
+        toolRegistry: registry,
+        eventBus,
+        governance,
+        dataDir: join(dataDir, "healing"),
+        config: {
+          pollIntervalMs: config.autopilot.pollIntervalMs || 60000,
+          healingEnabled: true,
+          maxConcurrentHeals: 2,
+        },
+      });
+      healer.start();
+      console.log("  Self-healing orchestrator started");
+
+      // Expose orchestrator on dashboard for API routes
+      (dashboard as unknown as { healer: HealingOrchestrator }).healer = healer;
+
       console.log("\nAll services running. Press Ctrl+C to stop.\n");
       break;
     }
@@ -248,6 +268,21 @@ async function main() {
         );
         await bot.start();
       }
+
+      // Self-healing orchestrator
+      const devHealer = new HealingOrchestrator({
+        agentCore,
+        toolRegistry: registry,
+        eventBus,
+        governance,
+        dataDir: join(dataDir, "healing"),
+        config: {
+          pollIntervalMs: 60000,
+          healingEnabled: true,
+          maxConcurrentHeals: 2,
+        },
+      });
+      devHealer.start();
 
       const cli = new InfraWrapCLI(agentCore, registry, eventBus, governance);
       await cli.start();

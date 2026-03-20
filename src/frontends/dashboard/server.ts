@@ -9,6 +9,9 @@ import type { ToolRegistry } from "../../tools/registry.js";
 import { EventBus } from "../../agent/events.js";
 import type { AuditLog } from "../../governance/audit.js";
 import type { AgentEvent } from "../../types.js";
+import { IncidentManager } from "../../healing/incidents.js";
+import { getDataDir } from "../../config.js";
+import { join } from "node:path";
 import { getHTML } from "./template.js";
 
 // ── SSE Client Tracking ────────────────────────────────────
@@ -26,6 +29,7 @@ export class DashboardServer {
   private clients: Map<number, SSEClient> = new Map();
   private clientIdCounter = 0;
   private eventListener: ((event: AgentEvent) => void) | null = null;
+  private incidentManager: IncidentManager;
 
   constructor(
     private readonly port: number,
@@ -33,7 +37,10 @@ export class DashboardServer {
     private readonly toolRegistry: ToolRegistry,
     private readonly eventBus: EventBus,
     private readonly audit: AuditLog,
-  ) {}
+  ) {
+    // Create a read-only IncidentManager that loads persisted incidents from disk
+    this.incidentManager = new IncidentManager(eventBus, join(getDataDir(), "healing"));
+  }
 
   async start(): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -120,9 +127,18 @@ export class DashboardServer {
         case "/api/audit/stats":
           this.handleAuditStats(res);
           break;
+        case "/api/incidents":
+          this.handleIncidents(res);
+          break;
         default:
-          res.writeHead(404, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "Not found" }));
+          // Dynamic route: /api/incidents/:id/timeline
+          if (path.startsWith("/api/incidents/") && path.endsWith("/timeline")) {
+            const incidentId = path.replace("/api/incidents/", "").replace("/timeline", "");
+            this.handleIncidentTimeline(res, incidentId);
+          } else {
+            res.writeHead(404, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Not found" }));
+          }
       }
     } catch (err) {
       console.error("[DashboardServer] Request error:", err);
@@ -247,6 +263,31 @@ export class DashboardServer {
       this.json(res, stats);
     } catch (err) {
       this.json(res, { error: "Failed to get audit stats" }, 500);
+    }
+  }
+
+  private handleIncidents(res: ServerResponse): void {
+    try {
+      const open = this.incidentManager.getOpen();
+      const recent = this.incidentManager.getRecent(20);
+      const patterns = this.incidentManager.getPatterns();
+      this.json(res, { open, recent, patterns });
+    } catch (err) {
+      this.json(res, { error: "Failed to fetch incidents" }, 500);
+    }
+  }
+
+  private handleIncidentTimeline(res: ServerResponse, incidentId: string): void {
+    try {
+      const incident = this.incidentManager.getById(incidentId);
+      if (!incident) {
+        this.json(res, { error: "Incident not found" }, 404);
+        return;
+      }
+      const timeline = this.incidentManager.getTimeline(incidentId);
+      this.json(res, { incident, timeline });
+    } catch (err) {
+      this.json(res, { error: "Failed to fetch incident timeline" }, 500);
     }
   }
 
