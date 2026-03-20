@@ -1636,6 +1636,413 @@ tbody tr:last-child td {
   0% { left: -40%; }
   100% { left: 100%; }
 }
+
+/* ── Resource Gauges & Sparklines ────────────────────── */
+.resource-gauges {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 20px 24px;
+}
+
+.gauge-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  transition: border-color 0.3s;
+}
+
+.gauge-card:hover {
+  border-color: var(--border-focus);
+}
+
+.gauge-svg {
+  position: relative;
+  width: 100px;
+  height: 100px;
+}
+
+.gauge-svg svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.gauge-svg .gauge-track {
+  fill: none;
+  stroke: var(--bg-active);
+  stroke-width: 8;
+}
+
+.gauge-svg .gauge-fill {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.6s ease, stroke 0.4s ease;
+}
+
+.gauge-pct {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.28rem;
+  font-weight: 700;
+  color: var(--text-accent);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.gauge-pct .gauge-pct-unit {
+  font-size: 0.71rem;
+  font-weight: 400;
+  color: var(--text-tertiary);
+}
+
+.gauge-label {
+  font-size: 0.71rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+.gauge-detail {
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sparklines section */
+.sparklines-section {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 0 24px 20px;
+}
+
+.sparkline-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  transition: border-color 0.3s;
+}
+
+.sparkline-card:hover {
+  border-color: var(--border-focus);
+}
+
+.sparkline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.sparkline-title {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sparkline-value {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.sparkline-svg {
+  width: 100%;
+  height: 40px;
+  overflow: visible;
+}
+
+.sparkline-svg .sparkline-area {
+  fill: url(#sparkGrad);
+  opacity: 0.15;
+}
+
+.sparkline-svg .sparkline-line {
+  fill: none;
+  stroke: var(--teal);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* Per-node breakdown */
+.node-breakdown {
+  padding: 0 24px 20px;
+}
+
+.node-breakdown-title {
+  font-size: 0.71rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+
+.node-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.node-break-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+
+.node-break-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.node-break-name .nbdot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+}
+
+.node-break-name .nbdot.offline { background: var(--red); }
+
+.node-break-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.node-break-bar-label {
+  font-size: 0.64rem;
+  color: var(--text-tertiary);
+  width: 30px;
+  flex-shrink: 0;
+}
+
+.node-break-bar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-active);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.node-break-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease, background 0.4s ease;
+}
+
+.node-break-bar-pct {
+  font-size: 0.64rem;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  width: 36px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .resource-gauges { grid-template-columns: 1fr; }
+  .sparklines-section { grid-template-columns: 1fr; }
+}
+
+/* ── Predictions ────────────────────────────────────── */
+.predictions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+}
+
+.prediction-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  transition: border-color 0.2s, opacity 0.3s;
+}
+
+.prediction-card.status-healthy { border-left: 3px solid var(--green); }
+.prediction-card.status-warning { border-left: 3px solid var(--amber); }
+.prediction-card.status-critical { border-left: 3px solid var(--red); }
+
+.prediction-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.prediction-metric {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.prediction-node {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  background: var(--bg-card);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.prediction-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.prediction-current {
+  font-size: 1.5rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  line-height: 1;
+}
+
+.prediction-current.healthy { color: var(--green); }
+.prediction-current.warning { color: var(--amber); }
+.prediction-current.critical { color: var(--red); }
+
+.prediction-trend {
+  font-size: 1rem;
+  opacity: 0.8;
+}
+
+.prediction-trend.rising { color: var(--red); }
+.prediction-trend.stable { color: var(--text-tertiary); }
+.prediction-trend.falling { color: var(--green); }
+
+.prediction-slope {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+.prediction-bar-container {
+  margin: 10px 0 6px;
+  position: relative;
+  height: 20px;
+  background: var(--bg-card);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.prediction-bar-current {
+  height: 100%;
+  border-radius: 4px 0 0 4px;
+  transition: width 0.5s ease;
+}
+
+.prediction-bar-projected {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  opacity: 0.3;
+  transition: left 0.5s ease, width 0.5s ease;
+}
+
+.prediction-bar-threshold {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--red);
+  opacity: 0.7;
+}
+
+.prediction-bar-threshold::after {
+  content: '90%';
+  position: absolute;
+  top: -14px;
+  left: -10px;
+  font-size: 0.6rem;
+  color: var(--red);
+  font-family: var(--font-mono);
+}
+
+.prediction-bar-proj-marker {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--amber);
+  opacity: 0.8;
+}
+
+.prediction-bar-proj-marker::after {
+  content: '24h';
+  position: absolute;
+  bottom: -14px;
+  left: -8px;
+  font-size: 0.6rem;
+  color: var(--amber);
+  font-family: var(--font-mono);
+}
+
+.prediction-countdown {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.prediction-countdown .time-value {
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.prediction-countdown .time-value.healthy { color: var(--green); }
+.prediction-countdown .time-value.warning { color: var(--amber); }
+.prediction-countdown .time-value.critical { color: var(--red); }
+
+.prediction-status-text {
+  font-size: 0.72rem;
+  margin-top: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.prediction-status-text.healthy {
+  background: var(--green-muted);
+  color: var(--green);
+}
+.prediction-status-text.warning {
+  background: var(--amber-muted);
+  color: var(--amber);
+}
+.prediction-status-text.critical {
+  background: var(--red-muted);
+  color: var(--red);
+}
+
+.predictions-empty {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-tertiary);
+  font-size: 0.82rem;
+}
 </style>
 </head>
 <body>
@@ -1724,6 +2131,132 @@ tbody tr:last-child td {
 
     <!-- Tab: Resources (VMs + Containers) -->
     <div class="tab-panel" id="tab-resources">
+
+      <!-- Predictive Forecasting -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;opacity:0.6"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Predictive Forecasting
+          </span>
+          <span class="card-badge" style="background:var(--teal-muted);color:var(--teal);font-size:0.65rem">BETA</span>
+        </div>
+        <div class="card-body">
+          <div class="predictions-grid" id="predictionsGrid">
+            <div class="predictions-empty">Loading predictions...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resource Gauges -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Cluster Resources
+          </span>
+          <span class="card-badge" id="resourceLastUpdate" style="background:rgba(255,255,255,0.06);color:var(--text-tertiary)">--</span>
+        </div>
+
+        <!-- SVG gradient definition for sparklines -->
+        <svg style="position:absolute;width:0;height:0">
+          <defs>
+            <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="var(--teal)" stop-opacity="0.4"/>
+              <stop offset="100%" stop-color="var(--teal)" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+        </svg>
+
+        <div class="resource-gauges">
+          <!-- CPU Gauge -->
+          <div class="gauge-card">
+            <div class="gauge-svg">
+              <svg viewBox="0 0 100 100">
+                <circle class="gauge-track" cx="50" cy="50" r="42"/>
+                <circle class="gauge-fill" id="gaugeCpuFill" cx="50" cy="50" r="42"
+                  stroke="var(--teal)"
+                  stroke-dasharray="0 264"
+                />
+              </svg>
+              <div class="gauge-pct"><span id="gaugeCpuPct">--</span><span class="gauge-pct-unit">%</span></div>
+            </div>
+            <div class="gauge-label">CPU</div>
+            <div class="gauge-detail" id="gaugeCpuDetail">-- cores</div>
+          </div>
+          <!-- RAM Gauge -->
+          <div class="gauge-card">
+            <div class="gauge-svg">
+              <svg viewBox="0 0 100 100">
+                <circle class="gauge-track" cx="50" cy="50" r="42"/>
+                <circle class="gauge-fill" id="gaugeRamFill" cx="50" cy="50" r="42"
+                  stroke="var(--teal)"
+                  stroke-dasharray="0 264"
+                />
+              </svg>
+              <div class="gauge-pct"><span id="gaugeRamPct">--</span><span class="gauge-pct-unit">%</span></div>
+            </div>
+            <div class="gauge-label">RAM</div>
+            <div class="gauge-detail" id="gaugeRamDetail">-- GB used / -- GB</div>
+          </div>
+          <!-- Disk Gauge -->
+          <div class="gauge-card">
+            <div class="gauge-svg">
+              <svg viewBox="0 0 100 100">
+                <circle class="gauge-track" cx="50" cy="50" r="42"/>
+                <circle class="gauge-fill" id="gaugeDiskFill" cx="50" cy="50" r="42"
+                  stroke="var(--teal)"
+                  stroke-dasharray="0 264"
+                />
+              </svg>
+              <div class="gauge-pct"><span id="gaugeDiskPct">--</span><span class="gauge-pct-unit">%</span></div>
+            </div>
+            <div class="gauge-label">Disk</div>
+            <div class="gauge-detail" id="gaugeDiskDetail">-- GB used / -- GB</div>
+          </div>
+        </div>
+
+        <!-- Sparklines -->
+        <div class="sparklines-section">
+          <div class="sparkline-card">
+            <div class="sparkline-header">
+              <span class="sparkline-title">CPU History</span>
+              <span class="sparkline-value" id="sparkCpuVal">--%</span>
+            </div>
+            <svg class="sparkline-svg" id="sparkCpuSvg" viewBox="0 0 200 40" preserveAspectRatio="none">
+              <path class="sparkline-area" d=""/>
+              <polyline class="sparkline-line" points=""/>
+            </svg>
+          </div>
+          <div class="sparkline-card">
+            <div class="sparkline-header">
+              <span class="sparkline-title">RAM History</span>
+              <span class="sparkline-value" id="sparkRamVal">--%</span>
+            </div>
+            <svg class="sparkline-svg" id="sparkRamSvg" viewBox="0 0 200 40" preserveAspectRatio="none">
+              <path class="sparkline-area" d=""/>
+              <polyline class="sparkline-line" points=""/>
+            </svg>
+          </div>
+          <div class="sparkline-card">
+            <div class="sparkline-header">
+              <span class="sparkline-title">Disk History</span>
+              <span class="sparkline-value" id="sparkDiskVal">--%</span>
+            </div>
+            <svg class="sparkline-svg" id="sparkDiskSvg" viewBox="0 0 200 40" preserveAspectRatio="none">
+              <path class="sparkline-area" d=""/>
+              <polyline class="sparkline-line" points=""/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Per-node breakdown (populated dynamically) -->
+        <div class="node-breakdown" id="nodeBreakdown" style="display:none">
+          <div class="node-breakdown-title">Per-Node Breakdown</div>
+          <div class="node-breakdown-grid" id="nodeBreakdownGrid"></div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-head">
           <span class="card-title">Virtual Machines</span>
@@ -1900,6 +2433,8 @@ const state = {
     timelines: {}, // id -> timeline entries (cached)
   },
   healingBanners: [], // { type: 'paused'|'escalated', message, id }
+  healthHistory: [],  // last 30 ClusterHealthSummary objects for sparklines
+  lastHealth: null,   // most recent health_check data
 };
 
 // ── SSE Connection ─────────────────────────────────────
@@ -1937,6 +2472,15 @@ function connect() {
   evtSource.addEventListener('healing_failed', (e) => handleEvent(JSON.parse(e.data)));
   evtSource.addEventListener('healing_paused', (e) => handleEvent(JSON.parse(e.data)));
   evtSource.addEventListener('healing_escalated', (e) => handleEvent(JSON.parse(e.data)));
+
+  // Health check events — update gauges, sparklines, stat cards
+  evtSource.addEventListener('health_check', (e) => {
+    try {
+      const evt = JSON.parse(e.data);
+      const d = evt.data || evt;
+      handleHealthCheck(d);
+    } catch {}
+  });
 
   evtSource.onerror = () => {
     state.connected = false;
@@ -3152,6 +3696,180 @@ function timeAgo(isoStr) {
   return d + 'd ago';
 }
 
+// ── Health Check Handler ─────────────────────────────────
+const GAUGE_CIRCUMFERENCE = 2 * Math.PI * 42; // ~263.89
+
+function handleHealthCheck(d) {
+  state.lastHealth = d;
+
+  // Store for sparklines (max 30 points)
+  state.healthHistory.push(d);
+  if (state.healthHistory.length > 30) state.healthHistory.shift();
+
+  // 1. Update stat cards
+  updateStatCardsFromHealth(d);
+
+  // 2. Update gauges
+  updateGauges(d);
+
+  // 3. Update sparklines
+  updateSparklines();
+
+  // 4. Update per-node breakdown
+  updateNodeBreakdown(d);
+
+  // 5. Update last-update badge
+  const badge = document.getElementById('resourceLastUpdate');
+  if (badge) {
+    const t = new Date(d.timestamp);
+    badge.textContent = t.toLocaleTimeString();
+  }
+}
+
+function updateStatCardsFromHealth(d) {
+  if (!d) return;
+  const n = d.nodes || {};
+  const v = d.vms || {};
+  const r = d.resources || {};
+
+  setText('statNodes', (n.online || 0) + '/' + (n.total || 0));
+  setText('statVMs', v.total || 0);
+  setText('statRunning', v.running || 0);
+
+  const cpuEl = document.getElementById('statCPU');
+  if (cpuEl) cpuEl.innerHTML = (r.cpu_usage_pct || 0).toFixed(1) + '<span class="unit">%</span>';
+
+  const ramEl = document.getElementById('statRAM');
+  if (ramEl) ramEl.innerHTML = (r.ram_usage_pct || 0).toFixed(1) + '<span class="unit">%</span>';
+}
+
+function gaugeColor(pct) {
+  if (pct > 80) return 'var(--red)';
+  if (pct > 60) return 'var(--amber)';
+  return 'var(--teal)';
+}
+
+function updateGauges(d) {
+  if (!d || !d.resources) return;
+  const r = d.resources;
+
+  // CPU
+  setGauge('gaugeCpuFill', 'gaugeCpuPct', r.cpu_usage_pct || 0);
+  const cpuDetail = document.getElementById('gaugeCpuDetail');
+  if (cpuDetail) cpuDetail.textContent = (r.cpu_cores_total || 0) + ' cores total';
+
+  // RAM
+  setGauge('gaugeRamFill', 'gaugeRamPct', r.ram_usage_pct || 0);
+  const ramDetail = document.getElementById('gaugeRamDetail');
+  if (ramDetail) {
+    const usedGB = (r.ram_used_mb / 1024).toFixed(1);
+    const totalGB = (r.ram_total_mb / 1024).toFixed(1);
+    ramDetail.textContent = usedGB + ' GB used / ' + totalGB + ' GB';
+  }
+
+  // Disk
+  setGauge('gaugeDiskFill', 'gaugeDiskPct', r.disk_usage_pct || 0);
+  const diskDetail = document.getElementById('gaugeDiskDetail');
+  if (diskDetail) {
+    diskDetail.textContent = (r.disk_used_gb || 0).toFixed(1) + ' GB used / ' + (r.disk_total_gb || 0).toFixed(1) + ' GB';
+  }
+}
+
+function setGauge(fillId, pctId, pct) {
+  const fill = document.getElementById(fillId);
+  const pctEl = document.getElementById(pctId);
+  if (!fill || !pctEl) return;
+
+  const clamped = Math.min(Math.max(pct, 0), 100);
+  const dashLen = (clamped / 100) * GAUGE_CIRCUMFERENCE;
+  fill.setAttribute('stroke-dasharray', dashLen + ' ' + GAUGE_CIRCUMFERENCE);
+  fill.setAttribute('stroke', gaugeColor(clamped));
+  pctEl.textContent = clamped.toFixed(1);
+}
+
+function updateSparklines() {
+  const history = state.healthHistory;
+  if (history.length < 2) return;
+
+  renderSparkline('sparkCpuSvg', 'sparkCpuVal', history.map(function(h) { return h.resources.cpu_usage_pct || 0; }));
+  renderSparkline('sparkRamSvg', 'sparkRamVal', history.map(function(h) { return h.resources.ram_usage_pct || 0; }));
+  renderSparkline('sparkDiskSvg', 'sparkDiskVal', history.map(function(h) { return h.resources.disk_usage_pct || 0; }));
+}
+
+function renderSparkline(svgId, valId, data) {
+  const svg = document.getElementById(svgId);
+  const valEl = document.getElementById(valId);
+  if (!svg || data.length < 2) return;
+
+  const latest = data[data.length - 1];
+  if (valEl) valEl.textContent = latest.toFixed(1) + '%';
+
+  const W = 200;
+  const H = 40;
+  const pad = 2;
+  const maxVal = Math.max(100, Math.max.apply(null, data));
+  const n = data.length;
+
+  const pts = data.map(function(v, i) {
+    const x = (i / (n - 1)) * W;
+    const y = pad + ((1 - v / maxVal) * (H - pad * 2));
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  });
+
+  const polyline = svg.querySelector('.sparkline-line');
+  if (polyline) polyline.setAttribute('points', pts.join(' '));
+
+  const area = svg.querySelector('.sparkline-area');
+  if (area) {
+    const areaD = 'M' + pts[0] + ' ' + pts.map(function(p) { return 'L' + p; }).join(' ') +
+      ' L' + W + ',' + H + ' L0,' + H + ' Z';
+    area.setAttribute('d', areaD);
+  }
+}
+
+function updateNodeBreakdown(d) {
+  if (!d || !d.nodes) return;
+  const container = document.getElementById('nodeBreakdown');
+  const grid = document.getElementById('nodeBreakdownGrid');
+  if (!container || !grid) return;
+
+  // Only show if we have cluster data with per-node info
+  const cluster = state.cluster;
+  if (!cluster || !cluster.nodes || cluster.nodes.length < 1) {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'block';
+  const nodes = cluster.nodes;
+  const r = d.resources || {};
+
+  grid.innerHTML = nodes.map(function(n) {
+    const online = n.status === 'online';
+    const cpu = typeof n.cpu_usage_pct === 'number' ? n.cpu_usage_pct : 0;
+    const ramPct = (n.ram_total_mb && n.ram_used_mb) ? (n.ram_used_mb / n.ram_total_mb * 100) : 0;
+    // Disk pct not available per-node from cluster API, estimate from summary if single node
+    const diskPct = nodes.length === 1 ? (r.disk_usage_pct || 0) : 0;
+
+    return '<div class="node-break-card">' +
+      '<div class="node-break-name"><span class="nbdot' + (online ? '' : ' offline') + '"></span>' + escapeHtml(n.name || '-') + '</div>' +
+      nodeBreakBar('CPU', cpu) +
+      nodeBreakBar('RAM', ramPct) +
+      (diskPct > 0 ? nodeBreakBar('Disk', diskPct) : '') +
+    '</div>';
+  }).join('');
+}
+
+function nodeBreakBar(label, pct) {
+  var clamped = Math.min(Math.max(pct, 0), 100);
+  var color = clamped > 80 ? 'var(--red)' : clamped > 60 ? 'var(--amber)' : 'var(--teal)';
+  return '<div class="node-break-bar-row">' +
+    '<span class="node-break-bar-label">' + label + '</span>' +
+    '<div class="node-break-bar-track"><div class="node-break-bar-fill" style="width:' + clamped.toFixed(1) + '%;background:' + color + '"></div></div>' +
+    '<span class="node-break-bar-pct">' + clamped.toFixed(1) + '%</span>' +
+  '</div>';
+}
+
 // ── Polling ────────────────────────────────────────────
 async function pollCluster() {
   try {
@@ -3160,13 +3878,110 @@ async function pollCluster() {
   } catch {}
 }
 
+// ── Predictions ────────────────────────────────────────
+
+const METRIC_LABELS = {
+  node_cpu_pct: 'CPU Usage',
+  node_mem_pct: 'Memory Usage',
+  node_disk_pct: 'Disk Usage',
+};
+
+function getTrendArrow(slope) {
+  if (slope > 0.1) return { arrow: '\u2191', cls: 'rising' };
+  if (slope < -0.1) return { arrow: '\u2193', cls: 'falling' };
+  return { arrow: '\u2192', cls: 'stable' };
+}
+
+function getValueClass(status) {
+  if (status === 'critical') return 'critical';
+  if (status === 'warning') return 'warning';
+  return 'healthy';
+}
+
+function getStatusText(p) {
+  var trend = getTrendArrow(p.slope_per_hour);
+  if (p.status === 'critical') {
+    return 'Critical \u2014 projected critical in ' + (p.hours_to_critical != null ? p.hours_to_critical + 'h' : 'N/A');
+  }
+  if (p.status === 'warning') {
+    return 'Warning \u2014 projected critical in ' + (p.hours_to_critical != null ? p.hours_to_critical + 'h' : 'N/A');
+  }
+  if (trend.cls === 'falling') return 'Healthy \u2014 declining trend';
+  if (trend.cls === 'stable') return 'Healthy \u2014 stable trend';
+  return 'Healthy \u2014 slow growth, >48h to threshold';
+}
+
+function renderPredictions(predictions) {
+  var grid = document.getElementById('predictionsGrid');
+  if (!grid) return;
+
+  if (!predictions || predictions.length === 0) {
+    grid.innerHTML = '<div class="predictions-empty">No prediction data available yet. Metrics need at least 2 data points.</div>';
+    return;
+  }
+
+  grid.innerHTML = predictions.map(function(p) {
+    var trend = getTrendArrow(p.slope_per_hour);
+    var valCls = getValueClass(p.status);
+    var currentPct = Math.min(p.current, 100);
+    var proj24Pct = Math.min(p.projected_24h, 100);
+    var barColor = p.status === 'critical' ? 'var(--red)' : p.status === 'warning' ? 'var(--amber)' : 'var(--teal)';
+    var projBarColor = p.status === 'critical' ? 'var(--red)' : p.status === 'warning' ? 'var(--amber)' : 'var(--teal)';
+    var label = METRIC_LABELS[p.metric] || p.metric;
+    var nodeLabel = p.labels.node || p.labels.host || '';
+    var countdownStr = p.hours_to_critical != null ? (p.hours_to_critical < 1 ? '<1h' : Math.round(p.hours_to_critical) + 'h') : '\u221E';
+
+    var html = '<div class="prediction-card status-' + p.status + '">';
+    html += '<div class="prediction-header">';
+    html += '<span class="prediction-metric">' + escapeHtml(label) + '</span>';
+    if (nodeLabel) html += '<span class="prediction-node">' + escapeHtml(nodeLabel) + '</span>';
+    html += '</div>';
+
+    html += '<div class="prediction-value-row">';
+    html += '<span class="prediction-current ' + valCls + '">' + p.current + '%</span>';
+    html += '<span class="prediction-trend ' + trend.cls + '">' + trend.arrow + '</span>';
+    html += '<span class="prediction-slope">' + (p.slope_per_hour >= 0 ? '+' : '') + p.slope_per_hour + '%/hr</span>';
+    html += '</div>';
+
+    // Projection bar
+    html += '<div class="prediction-bar-container">';
+    html += '<div class="prediction-bar-current" style="width:' + currentPct + '%;background:' + barColor + '"></div>';
+    if (proj24Pct > currentPct) {
+      html += '<div class="prediction-bar-projected" style="left:' + currentPct + '%;width:' + (proj24Pct - currentPct) + '%;background:' + projBarColor + '"></div>';
+    }
+    html += '<div class="prediction-bar-proj-marker" style="left:' + proj24Pct + '%"></div>';
+    html += '<div class="prediction-bar-threshold" style="left:90%"></div>';
+    html += '</div>';
+
+    // Countdown
+    html += '<div class="prediction-countdown">Time to critical: <span class="time-value ' + valCls + '">' + countdownStr + '</span></div>';
+
+    // Status text
+    html += '<div class="prediction-status-text ' + p.status + '">' + getStatusText(p) + '</div>';
+
+    html += '</div>';
+    return html;
+  }).join('');
+}
+
+async function loadPredictions() {
+  try {
+    var data = await fetch('/api/health/predictions').then(function(r) { return r.json(); });
+    renderPredictions(data.predictions || []);
+  } catch(e) {
+    // silently fail
+  }
+}
+
 // ── Init ───────────────────────────────────────────────
 connect();
 pollCluster();
 loadIncidents();
+loadPredictions();
 setInterval(pollCluster, 10000);
 setInterval(updateGov, 5000);
 setInterval(function() { updateIncidentBadge(); renderActiveIncidents(); }, 15000); // refresh time-ago
+setInterval(loadPredictions, 30000);
 </script>
 </body>
 </html>`;

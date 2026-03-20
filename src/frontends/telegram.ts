@@ -603,6 +603,16 @@ export class InfraWrapBot {
     return first.done ? null : first.value;
   }
 
+  /**
+   * Escape text for Telegram HTML parse mode.
+   */
+  private escHtml(text: string): string {
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
   constructor(
     config: TelegramBotConfig,
     agentCore: AgentCore,
@@ -645,6 +655,7 @@ export class InfraWrapBot {
       { command: "investigate", description: "Root cause analysis" },
       { command: "audit", description: "Recent audit entries" },
       { command: "governance", description: "Governance status" },
+      { command: "incidents", description: "Open & recent incidents" },
     ]);
 
     // Register as the plan-level approval handler
@@ -825,6 +836,7 @@ export class InfraWrapBot {
         "  /investigate — Root cause analysis",
         "  /audit — Recent audit trail",
         "  /governance — Governance status",
+        "  /incidents — Open & recent incidents",
         "",
         "Or just type in plain English:",
         '  "list all my vms"',
@@ -1060,6 +1072,101 @@ export class InfraWrapBot {
           lines.push(
             `\u{1F6A8} ${md2Bold("Pending Approvals:")} ${escMd2(String(this.pendingApprovals.size))}`,
           );
+        }
+
+        await safeSend(ctx, lines.join("\n"));
+      } catch (err) {
+        await ctx.reply(`Failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    });
+
+    // ── /incidents ──
+    this.bot.command("incidents", async (ctx) => {
+      try {
+        const history = this.eventBus.getHistory();
+
+        // Collect open and recent incidents from event history
+        const incidentMap = new Map<string, {
+          id: string;
+          description: string;
+          severity: string;
+          status: string;
+          metric: string;
+          detected_at: string;
+          resolved_at?: string;
+        }>();
+
+        for (const event of history) {
+          const d = event.data as Record<string, unknown>;
+          const incidentId = d.incident_id as string | undefined;
+          if (!incidentId) continue;
+
+          if (event.type === "incident_opened") {
+            incidentMap.set(incidentId, {
+              id: incidentId,
+              description: (d.description as string) || "Unknown",
+              severity: (d.severity as string) || "unknown",
+              status: "open",
+              metric: (d.metric as string) || "",
+              detected_at: event.timestamp,
+            });
+          } else if (event.type === "healing_started") {
+            const existing = incidentMap.get(incidentId);
+            if (existing) existing.status = "healing";
+          } else if (event.type === "healing_completed" || event.type === "incident_resolved") {
+            const existing = incidentMap.get(incidentId);
+            if (existing) {
+              existing.status = "resolved";
+              existing.resolved_at = event.timestamp;
+            }
+          } else if (event.type === "healing_failed" || event.type === "incident_failed") {
+            const existing = incidentMap.get(incidentId);
+            if (existing) existing.status = "failed";
+          }
+        }
+
+        const incidents = Array.from(incidentMap.values()).sort(
+          (a, b) => new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime(),
+        );
+
+        if (incidents.length === 0) {
+          await ctx.reply("No incidents recorded.");
+          return;
+        }
+
+        const openIncidents = incidents.filter((i) => i.status === "open" || i.status === "healing");
+        const recentResolved = incidents
+          .filter((i) => i.status === "resolved" || i.status === "failed")
+          .slice(0, 5);
+
+        const lines: string[] = [];
+
+        if (openIncidents.length > 0) {
+          lines.push(`\u{1F534} ${md2Bold("Open Incidents")} \\(${escMd2(String(openIncidents.length))}\\)`);
+          lines.push("");
+          for (const inc of openIncidents) {
+            const sevIcon = inc.severity === "critical" ? "\u{1F6A8}" : "\u26A0\uFE0F";
+            const time = inc.detected_at.slice(11, 19);
+            lines.push(`${sevIcon} ${md2Bold(escMd2(inc.description.slice(0, 60)))}`);
+            lines.push(`   Severity: ${md2Code(inc.severity.toUpperCase())} \\| Status: ${md2Code(inc.status)} \\| ${md2Code(time)}`);
+            if (inc.metric) lines.push(`   Metric: ${md2Code(inc.metric)}`);
+            lines.push("");
+          }
+        } else {
+          lines.push(`\u{1F7E2} ${md2Bold("No open incidents")}`);
+          lines.push("");
+        }
+
+        if (recentResolved.length > 0) {
+          lines.push(`\u{1F4CB} ${md2Bold("Recent Resolved")}`);
+          lines.push("");
+          for (const inc of recentResolved) {
+            const icon = inc.status === "resolved" ? "\u2705" : "\u274C";
+            const time = inc.detected_at.slice(11, 19);
+            lines.push(`${icon} ${escMd2(inc.description.slice(0, 60))}`);
+            lines.push(`   ${md2Code(inc.severity.toUpperCase())} \\| ${md2Code(inc.status)} \\| ${md2Code(time)}`);
+            lines.push("");
+          }
         }
 
         await safeSend(ctx, lines.join("\n"));
@@ -1566,6 +1673,178 @@ export class InfraWrapBot {
         try {
           await this.bot.api.sendMessage(userId, text);
         } catch {}
+      }
+    });
+
+    // ── Healing & Incident Notifications ──────────────────
+
+    this.eventBus.on("incident_opened", async (event: AgentEvent) => {
+      const chatId = this.getChatId();
+      if (!chatId) {
+        console.warn("[telegram] No active chat for incident notification — skipping");
+        return;
+      }
+      try {
+        const d = event.data as Record<string, unknown>;
+        const description = (d.description as string) || "Unknown anomaly";
+        const severity = ((d.severity as string) || "unknown").toUpperCase();
+        const metric = (d.metric as string) || "";
+        const ts = event.timestamp.slice(11, 19);
+
+        const text = [
+          `<b>\ud83d\udd34 Incident Opened</b>`,
+          ``,
+          `${this.escHtml(description)}`,
+          `Severity: <b>${this.escHtml(severity)}</b>`,
+          metric ? `Metric: <code>${this.escHtml(metric)}</code>` : "",
+          ``,
+          `<i>${ts}</i>`,
+        ].filter(Boolean).join("\n");
+
+        await this.bot.api.sendMessage(chatId, text, { parse_mode: "HTML" });
+      } catch (err) {
+        console.error("[telegram] Failed to send incident_opened notification:", err);
+      }
+    });
+
+    this.eventBus.on("healing_started", async (event: AgentEvent) => {
+      const chatId = this.getChatId();
+      if (!chatId) {
+        console.warn("[telegram] No active chat for healing notification — skipping");
+        return;
+      }
+      try {
+        const d = event.data as Record<string, unknown>;
+        const playbookId = (d.playbook_id as string) || "unknown";
+        const description = (d.description as string) || "";
+        const ts = event.timestamp.slice(11, 19);
+
+        const text = [
+          `<b>\ud83d\udd27 Self-Healing Started</b>`,
+          ``,
+          `Playbook: <code>${this.escHtml(playbookId)}</code>`,
+          description ? `Goal: ${this.escHtml(description)}` : "",
+          ``,
+          `<i>${ts}</i>`,
+        ].filter(Boolean).join("\n");
+
+        await this.bot.api.sendMessage(chatId, text, { parse_mode: "HTML" });
+      } catch (err) {
+        console.error("[telegram] Failed to send healing_started notification:", err);
+      }
+    });
+
+    this.eventBus.on("healing_completed", async (event: AgentEvent) => {
+      const chatId = this.getChatId();
+      if (!chatId) {
+        console.warn("[telegram] No active chat for healing notification — skipping");
+        return;
+      }
+      try {
+        const d = event.data as Record<string, unknown>;
+        const playbookId = (d.playbook_id as string) || "unknown";
+        const stepsCompleted = d.steps_completed ?? "?";
+        const durationMs = d.duration_ms as number | undefined;
+        const durationStr = durationMs !== undefined ? `${(durationMs / 1000).toFixed(1)}s` : "?";
+        const ts = event.timestamp.slice(11, 19);
+
+        const text = [
+          `<b>\u2705 Healing Complete</b>`,
+          ``,
+          `Playbook: <code>${this.escHtml(playbookId)}</code>`,
+          `${stepsCompleted} steps completed in ${durationStr}`,
+          `Incident resolved`,
+          ``,
+          `<i>${ts}</i>`,
+        ].join("\n");
+
+        await this.bot.api.sendMessage(chatId, text, { parse_mode: "HTML" });
+      } catch (err) {
+        console.error("[telegram] Failed to send healing_completed notification:", err);
+      }
+    });
+
+    this.eventBus.on("healing_failed", async (event: AgentEvent) => {
+      const chatId = this.getChatId();
+      if (!chatId) {
+        console.warn("[telegram] No active chat for healing notification — skipping");
+        return;
+      }
+      try {
+        const d = event.data as Record<string, unknown>;
+        const playbookId = (d.playbook_id as string) || "unknown";
+        const errors = d.errors;
+        const errStr = Array.isArray(errors)
+          ? errors.map((e) => String(e)).join(", ")
+          : errors
+            ? String(errors)
+            : "Unknown error";
+        const ts = event.timestamp.slice(11, 19);
+
+        const text = [
+          `<b>\u274c Healing Failed</b>`,
+          ``,
+          `Playbook: <code>${this.escHtml(playbookId)}</code>`,
+          `Errors: ${this.escHtml(errStr.slice(0, 300))}`,
+          ``,
+          `<i>${ts}</i>`,
+        ].join("\n");
+
+        await this.bot.api.sendMessage(chatId, text, { parse_mode: "HTML" });
+      } catch (err) {
+        console.error("[telegram] Failed to send healing_failed notification:", err);
+      }
+    });
+
+    this.eventBus.on("healing_escalated", async (event: AgentEvent) => {
+      const chatId = this.getChatId();
+      if (!chatId) {
+        console.warn("[telegram] No active chat for healing notification — skipping");
+        return;
+      }
+      try {
+        const d = event.data as Record<string, unknown>;
+        const reason = (d.reason as string) || "Unknown reason";
+        const ts = event.timestamp.slice(11, 19);
+
+        const text = [
+          `<b>\u26a0\ufe0f Escalated to Operator</b>`,
+          ``,
+          `Reason: ${this.escHtml(reason)}`,
+          ``,
+          `<i>${ts}</i>`,
+        ].join("\n");
+
+        await this.bot.api.sendMessage(chatId, text, { parse_mode: "HTML" });
+      } catch (err) {
+        console.error("[telegram] Failed to send healing_escalated notification:", err);
+      }
+    });
+
+    this.eventBus.on("healing_paused", async (event: AgentEvent) => {
+      const chatId = this.getChatId();
+      if (!chatId) {
+        console.warn("[telegram] No active chat for healing notification — skipping");
+        return;
+      }
+      try {
+        const d = event.data as Record<string, unknown>;
+        const reason = (d.reason as string) || "Unknown reason";
+        const consecutiveFailures = d.consecutive_failures ?? "?";
+        const ts = event.timestamp.slice(11, 19);
+
+        const text = [
+          `<b>\ud83d\uded1 Self-Healing Paused</b>`,
+          ``,
+          `Circuit breaker tripped after ${consecutiveFailures} consecutive failures`,
+          `Reason: ${this.escHtml(reason)}`,
+          ``,
+          `<i>${ts}</i>`,
+        ].join("\n");
+
+        await this.bot.api.sendMessage(chatId, text, { parse_mode: "HTML" });
+      } catch (err) {
+        console.error("[telegram] Failed to send healing_paused notification:", err);
       }
     });
   }

@@ -13,6 +13,9 @@ import { IncidentManager } from "../../healing/incidents.js";
 import { getDataDir } from "../../config.js";
 import { join } from "node:path";
 import { getHTML } from "./template.js";
+import type { HealingOrchestrator } from "../../healing/orchestrator.js";
+import { linearRegression, predictTimeToThreshold } from "../../monitoring/anomaly.js";
+import type { DataPoint as AnomalyDataPoint } from "../../monitoring/anomaly.js";
 
 // ── SSE Client Tracking ────────────────────────────────────
 
@@ -30,6 +33,7 @@ export class DashboardServer {
   private clientIdCounter = 0;
   private eventListener: ((event: AgentEvent) => void) | null = null;
   private incidentManager: IncidentManager;
+  healer?: HealingOrchestrator;
 
   constructor(
     private readonly port: number,
@@ -129,6 +133,9 @@ export class DashboardServer {
           break;
         case "/api/incidents":
           this.handleIncidents(res);
+          break;
+        case "/api/health/predictions":
+          this.handlePredictions(res);
           break;
         default:
           // Dynamic route: /api/incidents/:id/timeline
@@ -288,6 +295,69 @@ export class DashboardServer {
       this.json(res, { incident, timeline });
     } catch (err) {
       this.json(res, { error: "Failed to fetch incident timeline" }, 500);
+    }
+  }
+
+  private handlePredictions(res: ServerResponse): void {
+    try {
+      const store = this.healer?.getHealthMonitor().store;
+      if (!store) {
+        this.json(res, { predictions: [] });
+        return;
+      }
+
+      const CRITICAL_THRESHOLD = 90;
+      const targetMetrics = ["node_cpu_pct", "node_mem_pct", "node_disk_pct"];
+      const predictions: unknown[] = [];
+
+      for (const metric of targetMetrics) {
+        const allLatest = store.getAllLatest(metric);
+        for (const { value: currentValue, labels } of allLatest) {
+          const rawPoints = store.query(metric, labels, 30);
+          if (rawPoints.length < 2) continue;
+
+          // Convert health.ts DataPoints (numeric ts) to anomaly.ts DataPoints (string ts)
+          const anomalyPoints: AnomalyDataPoint[] = rawPoints.map((p) => ({
+            timestamp: new Date(p.timestamp).toISOString(),
+            value: p.value,
+            labels: p.labels,
+          }));
+
+          const { slope } = linearRegression(anomalyPoints);
+          const slopePerHour = slope * 60; // slope is per minute from linearRegression
+          const hoursToThreshold = predictTimeToThreshold(currentValue, slope, CRITICAL_THRESHOLD);
+
+          const projected1h = Math.min(100, Math.max(0, currentValue + slopePerHour * 1));
+          const projected6h = Math.min(100, Math.max(0, currentValue + slopePerHour * 6));
+          const projected24h = Math.min(100, Math.max(0, currentValue + slopePerHour * 24));
+
+          let status: string;
+          if (hoursToThreshold === null || hoursToThreshold > 48) {
+            status = "healthy";
+          } else if (hoursToThreshold > 6) {
+            status = "warning";
+          } else {
+            status = "critical";
+          }
+
+          predictions.push({
+            metric,
+            labels,
+            current: Math.round(currentValue * 10) / 10,
+            slope_per_hour: Math.round(slopePerHour * 100) / 100,
+            projected_1h: Math.round(projected1h * 10) / 10,
+            projected_6h: Math.round(projected6h * 10) / 10,
+            projected_24h: Math.round(projected24h * 10) / 10,
+            hours_to_critical: hoursToThreshold !== null ? Math.round(hoursToThreshold * 10) / 10 : null,
+            status,
+          });
+        }
+      }
+
+      this.json(res, { predictions });
+    } catch (err) {
+      console.error("[DashboardServer] Predictions error:", err);
+      this.json(res, { error: "Failed to generate predictions" }, 500);
     }
   }
 
