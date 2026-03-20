@@ -286,6 +286,24 @@ export class ChaosEngine {
   }
 
   /**
+   * Cancel the currently active chaos run.
+   */
+  cancel(): ChaosRun | null {
+    if (!this.activeRun) return null;
+    const run = this.activeRun;
+    run.status = "failed";
+    run.completed_at = new Date().toISOString();
+    this.emitEvent("chaos_failed", {
+      run_id: run.id,
+      scenario_id: run.scenario.id,
+      error: "Cancelled by operator",
+    });
+    this.history.push(run);
+    this.activeRun = null;
+    return run;
+  }
+
+  /**
    * List all available scenarios (built-in).
    */
   listScenarios(): ChaosScenario[] {
@@ -403,27 +421,6 @@ export class ChaosEngine {
             expected_recovery: onTargetNode
               ? "Bulk restart or migration after node failure detection"
               : "Not affected (different node)",
-          });
-        }
-        break;
-      }
-
-      case "resource_pressure": {
-        // Resource pressure doesn't kill VMs — it stresses the node
-        const targetNode =
-          (params?.node as string) ||
-          (clusterState.nodes.find((n) => n.status === "online")?.name ?? "");
-        for (const vm of clusterState.vms) {
-          affectedVMs.push({
-            vmid: Number(vm.id),
-            name: vm.name,
-            node: vm.node,
-            status: vm.status,
-            will_be_affected: vm.node === targetNode,
-            expected_recovery:
-              vm.node === targetNode
-                ? "May experience degraded performance; threshold alerts expected"
-                : "Not affected",
           });
         }
         break;

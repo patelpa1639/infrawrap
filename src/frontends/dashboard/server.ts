@@ -158,6 +158,9 @@ export class DashboardServer {
         case "/api/chaos/status":
           this.handleChaosStatus(res);
           break;
+        case "/api/chaos/cancel":
+          this.handleChaosCancel(res);
+          break;
         case "/api/chaos/history":
           this.handleChaosHistory(res);
           break;
@@ -457,6 +460,24 @@ export class DashboardServer {
     } catch (err) {
       console.error("[DashboardServer] Chaos status error:", err);
       this.json(res, { error: "Failed to get chaos status" }, 500);
+    }
+  }
+
+  private handleChaosCancel(res: ServerResponse): void {
+    try {
+      if (!this.chaosEngine) {
+        this.json(res, { error: "Chaos engine not available" }, 503);
+        return;
+      }
+      const cancelled = this.chaosEngine.cancel();
+      if (!cancelled) {
+        this.json(res, { error: "No active chaos run to cancel" }, 404);
+        return;
+      }
+      this.json(res, { ok: true, run_id: cancelled.id });
+    } catch (err) {
+      console.error("[DashboardServer] Chaos cancel error:", err);
+      this.json(res, { error: "Failed to cancel chaos run" }, 500);
     }
   }
 

@@ -162,37 +162,6 @@ export const BUILTIN_SCENARIOS: ChaosScenario[] = [
     reversible: true,
   },
 
-  // 5. Resource Pressure — create a VM that pressures the node
-  {
-    id: "resource_pressure",
-    name: "Resource Pressure",
-    description:
-      "Create a VM with high CPU and RAM allocation to pressure cluster resources. " +
-      "Tests threshold-based anomaly detection and resource-related healing playbooks.",
-    severity: "low",
-    target_type: "vm",
-    actions: [
-      {
-        type: "custom_goal",
-        params: {
-          goal_description:
-            "Create a temporary VM with 4 CPU cores and 8192 MB RAM named 'chaos-pressure-test' to stress-test cluster resource limits",
-          cleanup_after: true,
-        },
-        description: "Create a resource-heavy VM to pressure the node",
-      },
-    ],
-    expected_recovery: {
-      description: "Anomaly detector fires resource threshold warnings; optional: migration or scale-down playbook triggers",
-      max_recovery_time_s: 300,
-      verification_checks: [
-        "anomaly_detected",
-        "resource_thresholds_checked",
-      ],
-    },
-    requires_approval: false,
-    reversible: true,
-  },
 ];
 
 /**
