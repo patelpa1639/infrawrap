@@ -345,7 +345,7 @@ export const DEFAULT_PLAYBOOKS: Playbook[] = [
       "Restarts a VM that stopped unexpectedly and fires an alert",
     trigger: {
       metric: "vm_status",
-      type: "spike",
+      type: "threshold",
       severity: "critical",
     },
     actions: [

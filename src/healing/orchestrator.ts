@@ -150,12 +150,15 @@ export class HealingOrchestrator {
     if (this.running) return;
     this.running = true;
 
+    console.log(`[healing] Starting orchestrator (poll: ${this.config.pollIntervalMs}ms, healing: ${this.config.healingEnabled})`);
     this.healthMonitor.start(this.config.pollIntervalMs);
     // Run first tick after a short delay to let metrics collect
-    setTimeout(() => void this.tick(), 5000);
+    setTimeout(() => {
+      this.tick().catch((err) => console.error(`[healing] First tick failed:`, err));
+    }, 5000);
 
     this.pollTimer = setInterval(() => {
-      void this.tick();
+      this.tick().catch((err) => console.error(`[healing] Tick failed:`, err));
     }, this.config.pollIntervalMs);
   }
 
@@ -206,6 +209,8 @@ export class HealingOrchestrator {
     try {
       // Detect metric-based anomalies (threshold, trend, spike)
       const wrappedStore = wrapStoreForDetector(this.healthMonitor.store);
+      const seriesCount = this.healthMonitor.store.seriesCount;
+      const vmSnapshots = this.previousVmStatus.size;
       const anomalies = this.anomalyDetector.detect(wrappedStore);
 
       // Detect VM state changes (running → stopped = crash)
@@ -213,6 +218,8 @@ export class HealingOrchestrator {
       anomalies.push(...vmCrashAnomalies);
 
       summary.anomaliesDetected = anomalies.length;
+
+      console.log(`[healing] tick: ${seriesCount} series, ${vmSnapshots} VMs tracked, ${anomalies.length} anomalies, ${vmCrashAnomalies.length} state changes`);
 
       for (const anomaly of anomalies) {
         await this.handleAnomaly(anomaly, summary);
@@ -246,6 +253,7 @@ export class HealingOrchestrator {
     if (existing) return; // Already tracking this
 
     // Open a new incident
+    console.log(`[healing] Anomaly detected: ${anomaly.message} (type=${anomaly.type}, metric=${anomaly.metric})`);
     const incident = this.incidentManager.open(
       {
         type: anomaly.type,
@@ -256,9 +264,10 @@ export class HealingOrchestrator {
         description: anomaly.message,
       },
     );
+    console.log(`[healing] Incident opened: ${incident.id}`);
 
-    if (!this.config.healingEnabled) return;
-    if (this.circuitBreaker.paused) return;
+    if (!this.config.healingEnabled) { console.log(`[healing] Healing disabled, skipping`); return; }
+    if (this.circuitBreaker.paused) { console.log(`[healing] Circuit breaker paused, skipping`); return; }
 
     // Check escalation
     if (this.shouldEscalate(key)) {
@@ -287,10 +296,12 @@ export class HealingOrchestrator {
 
     if (!playbook) {
       const matches = this.playbookEngine.match(anomaly);
+      console.log(`[healing] Playbook match: ${matches.length} matches for type=${anomaly.type} metric=${anomaly.metric}`);
       playbook = matches[0]; // Take the first match
     }
 
-    if (!playbook) return;
+    if (!playbook) { console.log(`[healing] No playbook matched, incident stays open`); return; }
+    console.log(`[healing] Using playbook: ${playbook.id} (${playbook.name})`);
 
     // Block destructive playbooks
     if (playbook.requires_approval) {

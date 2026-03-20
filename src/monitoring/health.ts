@@ -149,8 +149,11 @@ export class HealthMonitor {
   start(intervalMs: number = 60_000): void {
     if (this.running) return;
     this.running = true;
-    this.collect();
-    this.timer = setInterval(() => this.collect(), intervalMs);
+    console.log(`[health] Starting health monitor (interval: ${intervalMs}ms)`);
+    this.collect().catch((err) => console.error(`[health] Initial collect failed:`, err));
+    this.timer = setInterval(() => {
+      this.collect().catch((err) => console.error(`[health] Collect failed:`, err));
+    }, intervalMs);
   }
 
   stop(): void {
@@ -183,12 +186,19 @@ export class HealthMonitor {
       unhealthy_nodes: [],
     };
 
-    const nodes = await this.collectNodes(batch, summary);
-    await this.collectVMs(batch, summary, nodes);
-    this.finalizeSummary(summary);
+    try {
+      const nodes = await this.collectNodes(batch, summary);
+      await this.collectVMs(batch, summary, nodes);
+      this.finalizeSummary(summary);
 
-    this.emitBatch(batch);
-    this.emitHealthCheck(summary);
+      console.log(`[health] collected: ${summary.nodes.online}/${summary.nodes.total} nodes, ${summary.vms.running} running / ${summary.vms.stopped} stopped VMs, ${batch.length} metrics`);
+
+      this.emitBatch(batch);
+      this.emitHealthCheck(summary);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[health] collection failed: ${msg}`);
+    }
   }
 
   // ── Node Collection ─────────────────────────────────────
