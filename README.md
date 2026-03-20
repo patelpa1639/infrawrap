@@ -28,6 +28,30 @@ Modern infrastructure tools make you choose: **observability** OR **automation**
 
 ---
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/topology.png" width="100%" alt="Cluster Topology Map" />
+  <br/><em>Interactive topology map — nodes, VMs, and storage with live metrics</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/resources.png" width="100%" alt="Resources & Right-Sizing" />
+  <br/><em>Predictive forecasting, VM right-sizing recommendations, and cluster resource gauges</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/command-palette.png" width="100%" alt="Command Palette" />
+  <br/><em>Cmd+K command palette — natural language infrastructure control</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/chaos.png" width="100%" alt="Chaos Engineering" />
+  <br/><em>Chaos engineering — simulate and execute failure scenarios with resilience scoring</em>
+</p>
+
+---
+
 ## Features
 
 ### AI-Powered Natural Language Ops
