@@ -77,7 +77,9 @@ export interface ChaosEngineOptions {
 // ── Constants ───────────────────────────────────────────────
 
 /** VM IDs that must NEVER be targeted by chaos (e.g. the VM running InfraWrap itself) */
-const PROTECTED_VMIDS = new Set(["100"]);
+const PROTECTED_VMIDS = new Set(
+  (process.env.CHAOS_PROTECTED_VMIDS || "").split(",").map((s) => s.trim()).filter(Boolean),
+);
 
 /** Maximum time (ms) to wait for healing to complete before declaring failure */
 const MAX_RECOVERY_WAIT_MS = 5 * 60 * 1000;
