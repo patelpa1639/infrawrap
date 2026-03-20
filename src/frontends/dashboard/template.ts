@@ -11,6 +11,7 @@ export function getHTML(): string {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>InfraWrap — Infrastructure Agent</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230B1120'/%3E%3Cpath d='M8 8 L8 24 M8 8 L14 8 M8 24 L14 24 M8 16 L12 16' stroke='%230ACDAA' stroke-width='2.5' stroke-linecap='round' fill='none'/%3E%3Cpath d='M24 8 L24 24 M24 8 L18 8 M24 24 L18 24 M24 16 L20 16' stroke='%230ACDAA' stroke-width='2.5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1704,10 +1705,10 @@ tbody tr:last-child td {
 /* VM circles */
 .topo-vm-group {
   cursor: pointer;
-  transition: transform 0.15s;
 }
-.topo-vm-group:hover {
-  transform: scale(1.08);
+.topo-vm-group:hover .topo-vm-circle {
+  stroke-width: 3;
+  filter: brightness(1.3);
 }
 .topo-vm-circle {
   stroke-width: 2;
@@ -1827,6 +1828,8 @@ tbody tr:last-child td {
 /* Tooltip */
 .topo-tooltip {
   position: absolute;
+  left: 0;
+  top: 0;
   background: var(--bg-elevated);
   border: 1px solid var(--border-focus);
   border-radius: var(--radius);
@@ -1837,6 +1840,7 @@ tbody tr:last-child td {
   z-index: 100;
   opacity: 0;
   transition: opacity 0.15s;
+  will-change: transform;
   max-width: 280px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
   backdrop-filter: blur(8px);
@@ -5121,7 +5125,10 @@ function renderTopology(data) {
   var W = container.clientWidth || 900;
 
   var nodes = data.nodes || [];
-  var vms = data.vms || [];
+  var vms = (data.vms || []).map(function(v) {
+    if (!v.vmid && v.id) v.vmid = v.id;
+    return v;
+  });
   var storage = data.storage || [];
 
   var nodeBoxW = 220, nodeBoxH = 90;
@@ -5205,18 +5212,20 @@ function renderTopology(data) {
     nt.textContent = node.name;
     g.appendChild(nt);
 
-    var cpuPct = node.cpu_pct || 0;
+    var cpuPct = node.cpu_usage_pct || node.cpu_pct || 0;
     g.appendChild(svgEl('rect', { x: 14, y: 38, width: nodeBoxW - 28, height: 6, class: 'topo-bar-bg' }));
     g.appendChild(svgEl('rect', { x: 14, y: 38, width: Math.max(1, (nodeBoxW - 28) * cpuPct / 100), height: 6, class: 'topo-bar-fill', fill: topoBarColor(cpuPct) }));
     var cl = svgEl('text', { x: 14, y: 35, class: 'topo-bar-label' });
     cl.textContent = 'CPU ' + Math.round(cpuPct) + '% (' + (node.cpu_cores || '?') + ' cores)';
     g.appendChild(cl);
 
-    var ramPct = node.ram_pct || (node.ram_mb ? (node.ram_used_mb || 0) / node.ram_mb * 100 : 0);
+    var ramTotal = node.ram_total_mb || node.ram_mb || 0;
+    var ramUsed = node.ram_used_mb || 0;
+    var ramPct = ramTotal > 0 ? (ramUsed / ramTotal) * 100 : 0;
     g.appendChild(svgEl('rect', { x: 14, y: 60, width: nodeBoxW - 28, height: 6, class: 'topo-bar-bg' }));
     g.appendChild(svgEl('rect', { x: 14, y: 60, width: Math.max(1, (nodeBoxW - 28) * ramPct / 100), height: 6, class: 'topo-bar-fill', fill: topoBarColor(ramPct) }));
     var rl = svgEl('text', { x: 14, y: 57, class: 'topo-bar-label' });
-    rl.textContent = 'RAM ' + Math.round(ramPct) + '% (' + topoFmtBytes(node.ram_mb || 0) + ')';
+    rl.textContent = 'RAM ' + Math.round(ramPct) + '% (' + topoFmtBytes(ramTotal) + ')';
     g.appendChild(rl);
 
     svg.appendChild(g);
@@ -5358,12 +5367,14 @@ function moveTopoTooltip(e) {
   var container = document.getElementById('topoContainer');
   if (!tip || !container) return;
   var rect = container.getBoundingClientRect();
-  var x = e.clientX - rect.left + 14;
-  var y = e.clientY - rect.top + 14;
-  if (x + 280 > rect.width) x = e.clientX - rect.left - 290;
-  if (y + 200 > rect.height) y = e.clientY - rect.top - 200;
-  tip.style.left = x + 'px';
-  tip.style.top = y + 'px';
+  var x = e.clientX - rect.left + 16;
+  var y = e.clientY - rect.top - 10;
+  var tw = tip.offsetWidth || 280;
+  var th = tip.offsetHeight || 160;
+  if (x + tw > rect.width) x = e.clientX - rect.left - tw - 16;
+  if (y + th > rect.height) y = rect.height - th - 8;
+  if (y < 0) y = 8;
+  tip.style.transform = 'translate(' + x + 'px,' + y + 'px)';
 }
 
 function hideTopoTooltip() {
