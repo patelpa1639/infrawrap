@@ -1604,6 +1604,374 @@ tbody tr:last-child td {
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
 
+/* ── Topology Map ───────────────────────────────────── */
+.topo-container {
+  position: relative;
+  width: 100%;
+  min-height: 600px;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+.topo-svg {
+  width: 100%;
+  height: 100%;
+  min-height: 600px;
+}
+
+.topo-grid-line {
+  stroke: var(--border-subtle);
+  stroke-width: 0.5;
+}
+
+/* Node boxes */
+.topo-node-box {
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+.topo-node-box:hover {
+  filter: brightness(1.2);
+}
+.topo-node-rect {
+  fill: var(--bg-card);
+  stroke: var(--border-focus);
+  stroke-width: 1.5;
+  rx: 10;
+  ry: 10;
+}
+.topo-node-label {
+  fill: var(--text-primary);
+  font-family: var(--font-brand);
+  font-size: 13px;
+  font-weight: 700;
+}
+.topo-node-sublabel {
+  fill: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+.topo-status-dot {
+  r: 4;
+}
+.topo-status-dot.online { fill: var(--teal); }
+.topo-status-dot.offline { fill: var(--red); }
+.topo-status-dot.unknown { fill: var(--text-tertiary); }
+
+/* Resource bars inside nodes */
+.topo-bar-bg {
+  fill: rgba(255,255,255,0.06);
+  rx: 2; ry: 2;
+}
+.topo-bar-fill {
+  rx: 2; ry: 2;
+  transition: width 0.5s ease;
+}
+.topo-bar-label {
+  fill: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+/* Connection lines */
+.topo-link {
+  fill: none;
+  stroke-width: 1.5;
+  transition: stroke 0.3s, stroke-width 0.3s;
+}
+.topo-link.running {
+  stroke: var(--teal);
+  stroke-dasharray: 6 4;
+  animation: topoFlowDash 1.5s linear infinite;
+}
+.topo-link.stopped {
+  stroke: var(--text-tertiary);
+  opacity: 0.4;
+}
+.topo-link.paused {
+  stroke: var(--amber);
+  stroke-dasharray: 4 4;
+  opacity: 0.6;
+}
+.topo-link.highlight {
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+@keyframes topoFlowDash {
+  to { stroke-dashoffset: -20; }
+}
+
+/* VM circles */
+.topo-vm-group {
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.topo-vm-group:hover {
+  transform: scale(1.08);
+}
+.topo-vm-circle {
+  stroke-width: 2;
+  transition: fill 0.3s, stroke 0.3s;
+}
+.topo-vm-circle.running {
+  fill: var(--teal-muted);
+  stroke: var(--teal);
+}
+.topo-vm-circle.stopped {
+  fill: var(--red-muted);
+  stroke: var(--red);
+  opacity: 0.7;
+}
+.topo-vm-circle.paused {
+  fill: var(--amber-muted);
+  stroke: var(--amber);
+}
+
+/* Glow for running VMs */
+.topo-vm-glow {
+  fill: none;
+  stroke-width: 1;
+  opacity: 0;
+}
+.topo-vm-glow.running {
+  stroke: var(--teal);
+  opacity: 0.5;
+  animation: topoGlowPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes topoGlowPulse {
+  0%, 100% { opacity: 0.2; r: inherit; }
+  50% { opacity: 0.6; }
+}
+
+/* Incident / healing effects */
+.topo-vm-incident-ring {
+  fill: none;
+  stroke-width: 2.5;
+  stroke: var(--red);
+  stroke-dasharray: 4 3;
+  animation: topoIncidentPulse 1s ease-in-out infinite;
+}
+
+@keyframes topoIncidentPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.topo-vm-healing-ring {
+  fill: none;
+  stroke-width: 2;
+  stroke: var(--amber);
+  stroke-dasharray: 8 4;
+  animation: spin 2s linear infinite;
+  transform-origin: center;
+}
+
+.topo-vm-healed-flash {
+  fill: none;
+  stroke: var(--teal);
+  stroke-width: 3;
+  opacity: 0;
+  animation: topoHealedFlash 1s ease-out forwards;
+}
+
+@keyframes topoHealedFlash {
+  0% { opacity: 1; r: 10; }
+  100% { opacity: 0; r: 35; }
+}
+
+/* VM labels */
+.topo-vm-label {
+  fill: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  text-anchor: middle;
+  pointer-events: none;
+}
+.topo-vm-id-label {
+  fill: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+/* Storage blocks */
+.topo-storage-rect {
+  fill: var(--bg-elevated);
+  stroke: var(--border);
+  stroke-width: 1;
+  rx: 6; ry: 6;
+}
+.topo-storage-label {
+  fill: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+}
+.topo-storage-sub {
+  fill: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+.topo-storage-bar-bg {
+  fill: rgba(255,255,255,0.06);
+  rx: 2; ry: 2;
+}
+.topo-storage-bar-fill {
+  rx: 2; ry: 2;
+  transition: width 0.5s ease;
+}
+
+/* Tooltip */
+.topo-tooltip {
+  position: absolute;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-focus);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.15s;
+  max-width: 280px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  backdrop-filter: blur(8px);
+}
+.topo-tooltip.visible {
+  opacity: 1;
+}
+.topo-tooltip .tt-title {
+  font-weight: 600;
+  font-size: 0.82rem;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.topo-tooltip .tt-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 2px 0;
+  font-family: var(--font-mono);
+  font-size: 0.71rem;
+}
+.topo-tooltip .tt-row .tt-key {
+  color: var(--text-tertiary);
+}
+.topo-tooltip .tt-row .tt-val {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Detail side panel */
+.topo-detail-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 280px;
+  height: 100%;
+  background: var(--bg-card);
+  border-left: 1px solid var(--border);
+  padding: 16px;
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  z-index: 50;
+}
+.topo-detail-panel.open {
+  transform: translateX(0);
+}
+.topo-detail-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.topo-detail-close:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.topo-detail-title {
+  font-family: var(--font-brand);
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.topo-detail-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  margin-bottom: 12px;
+}
+.topo-detail-status .dot {
+  width: 7px; height: 7px; border-radius: 50%;
+}
+.topo-detail-status .dot.running { background: var(--teal); }
+.topo-detail-status .dot.stopped { background: var(--red); }
+.topo-detail-status .dot.paused { background: var(--amber); }
+.topo-detail-section {
+  margin-bottom: 14px;
+}
+.topo-detail-section-title {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+.topo-detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  font-size: 0.78rem;
+}
+.topo-detail-row .dk { color: var(--text-tertiary); }
+.topo-detail-row .dv { color: var(--text-primary); font-family: var(--font-mono); font-weight: 500; }
+
+/* Legend */
+.topo-legend {
+  position: absolute;
+  bottom: 12px;
+  left: 16px;
+  display: flex;
+  gap: 16px;
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+  background: rgba(11,17,32,0.85);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  backdrop-filter: blur(4px);
+}
+.topo-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.topo-legend-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+}
+.topo-legend-rect {
+  width: 12px; height: 8px; border-radius: 2px;
+}
+
 /* ── Loading ─────────────────────────────────────────── */
 .spinner {
   width: 14px;
@@ -2043,6 +2411,250 @@ tbody tr:last-child td {
   color: var(--text-tertiary);
   font-size: 0.82rem;
 }
+
+/* ── Chaos Engineering Panel ─────────────────────────── */
+.chaos-controls {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.chaos-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
+.chaos-field label { font-size: 0.71rem; color: var(--text-tertiary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.03em; }
+.chaos-field select {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-family: var(--font-sans);
+  outline: none;
+  cursor: pointer;
+}
+.chaos-field select:focus { border-color: var(--teal-border); }
+
+.chaos-actions { display: flex; gap: 8px; align-items: flex-end; }
+
+.btn-simulate {
+  background: var(--blue-muted);
+  color: var(--blue);
+  border: 1px solid rgba(59,158,255,0.2);
+  padding: 7px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-simulate:hover { background: rgba(59,158,255,0.18); border-color: rgba(59,158,255,0.35); }
+.btn-simulate:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-execute-chaos {
+  background: var(--red-muted);
+  color: var(--red);
+  border: 1px solid rgba(239,68,68,0.25);
+  padding: 7px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: background 0.15s, border-color 0.15s;
+  letter-spacing: 0.02em;
+}
+.btn-execute-chaos:hover { background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.45); }
+.btn-execute-chaos:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.chaos-sim-results {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  display: none;
+}
+.chaos-sim-results.visible { display: block; animation: fadeIn 0.2s ease; }
+.chaos-sim-title { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+
+.chaos-blast-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.chaos-blast-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+}
+.chaos-blast-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.chaos-blast-dot.direct { background: var(--red); }
+.chaos-blast-dot.indirect { background: var(--amber); }
+.chaos-blast-dot.safe { background: var(--teal); }
+
+.chaos-sim-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.chaos-sim-stat {
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  text-align: center;
+}
+.chaos-sim-stat-label { font-size: 0.67rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+.chaos-sim-stat-value { font-size: 1.1rem; font-weight: 700; font-family: var(--font-brand); }
+
+.chaos-sim-recommendation {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--blue);
+}
+
+.risk-low { color: var(--teal); }
+.risk-medium { color: var(--amber); }
+.risk-high { color: var(--red); }
+
+/* Chaos execution live view */
+.chaos-execution {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  display: none;
+}
+.chaos-execution.visible { display: block; animation: fadeIn 0.2s ease; }
+
+.chaos-exec-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.chaos-exec-status-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.71rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.chaos-exec-status-badge.executing { background: var(--amber-muted); color: var(--amber); }
+.chaos-exec-status-badge.recovering { background: var(--blue-muted); color: var(--blue); }
+.chaos-exec-status-badge.verifying { background: var(--purple-muted); color: var(--purple); }
+.chaos-exec-status-badge.completed { background: var(--green-muted); color: var(--green); }
+.chaos-exec-status-badge.failed { background: var(--red-muted); color: var(--red); }
+
+.chaos-exec-timer {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.chaos-exec-phases {
+  display: flex; gap: 2px; margin-bottom: 14px;
+}
+.chaos-phase {
+  flex: 1; height: 4px; border-radius: 2px;
+  background: var(--border);
+  transition: background 0.3s;
+}
+.chaos-phase.active { background: var(--amber); animation: pulse 1.5s infinite; }
+.chaos-phase.done { background: var(--teal); }
+.chaos-phase.failed { background: var(--red); }
+
+.chaos-exec-log {
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.chaos-log-entry {
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  padding: 3px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.chaos-log-entry .chaos-log-time { color: var(--text-tertiary); margin-right: 8px; }
+
+/* Chaos results comparison */
+.chaos-results {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: none;
+}
+.chaos-results.visible { display: block; animation: fadeIn 0.2s ease; }
+
+.chaos-verdict {
+  text-align: center;
+  padding: 20px 0;
+  margin-bottom: 16px;
+}
+.chaos-verdict-label { font-size: 0.71rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.chaos-verdict-value { font-size: 2rem; font-weight: 800; font-family: var(--font-brand); }
+.chaos-verdict-value.pass { color: var(--teal); }
+.chaos-verdict-value.partial { color: var(--amber); }
+.chaos-verdict-value.fail { color: var(--red); }
+
+.chaos-resilience-score {
+  text-align: center;
+  margin-bottom: 16px;
+}
+.chaos-resilience-number { font-size: 2.8rem; font-weight: 800; font-family: var(--font-brand); color: var(--teal); }
+.chaos-resilience-label { font-size: 0.71rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; }
+
+.chaos-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.chaos-compare-cell {
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  text-align: center;
+}
+.chaos-compare-label { font-size: 0.67rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+.chaos-compare-value { font-size: 1.15rem; font-weight: 700; font-family: var(--font-brand); color: var(--text-primary); }
+
+.chaos-event-log {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.chaos-event-entry {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 8px;
+  font-size: 0.75rem;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+}
+.chaos-event-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.chaos-event-dot.action { background: var(--blue); }
+.chaos-event-dot.incident { background: var(--red); }
+.chaos-event-dot.heal { background: var(--teal); }
+
+.chaos-history-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.78rem;
+}
+.chaos-history-item:last-child { border-bottom: none; }
+.chaos-history-meta { color: var(--text-tertiary); font-size: 0.71rem; }
 </style>
 </head>
 <body>
@@ -2107,7 +2719,11 @@ tbody tr:last-child td {
   <div class="col-left">
     <!-- Tabs -->
     <div class="tabs">
-      <div class="tab active" data-tab="plan">Active Plan</div>
+      <div class="tab active" data-tab="topology">
+        <svg style="width:13px;height:13px;vertical-align:-2px;margin-right:3px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><circle cx="4" cy="19" r="3"/><circle cx="20" cy="19" r="3"/><line x1="12" y1="8" x2="4" y2="16"/><line x1="12" y1="8" x2="20" y2="16"/></svg>
+        Topology
+      </div>
+      <div class="tab" data-tab="plan">Active Plan</div>
       <div class="tab" data-tab="resources">Resources</div>
       <div class="tab" data-tab="nodes">Nodes</div>
       <div class="tab" data-tab="incidents">
@@ -2115,10 +2731,33 @@ tbody tr:last-child td {
         Incidents<span class="tab-badge zero" id="incidentTabBadge">0</span>
       </div>
       <div class="tab" data-tab="governance">Governance</div>
+      <div class="tab" data-tab="chaos">
+        <svg style="width:13px;height:13px;vertical-align:-2px;margin-right:3px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Chaos
+      </div>
+    </div>
+
+    <!-- Tab: Topology Map -->
+    <div class="tab-panel active" id="tab-topology">
+      <div class="topo-container" id="topoContainer">
+        <svg class="topo-svg" id="topoSvg"></svg>
+        <div class="topo-tooltip" id="topoTooltip"></div>
+        <div class="topo-detail-panel" id="topoDetailPanel">
+          <button class="topo-detail-close" id="topoDetailClose">&times;</button>
+          <div id="topoDetailContent"></div>
+        </div>
+        <div class="topo-legend">
+          <div class="topo-legend-item"><div class="topo-legend-dot" style="background:var(--teal)"></div> Running</div>
+          <div class="topo-legend-item"><div class="topo-legend-dot" style="background:var(--red)"></div> Stopped</div>
+          <div class="topo-legend-item"><div class="topo-legend-dot" style="background:var(--amber)"></div> Paused</div>
+          <div class="topo-legend-item"><div class="topo-legend-rect" style="background:var(--bg-card);border:1px solid var(--border-focus)"></div> Node</div>
+          <div class="topo-legend-item"><div class="topo-legend-rect" style="background:var(--bg-elevated);border:1px solid var(--border)"></div> Storage</div>
+        </div>
+      </div>
     </div>
 
     <!-- Tab: Active Plan -->
-    <div class="tab-panel active" id="tab-plan">
+    <div class="tab-panel" id="tab-plan">
       <div class="card">
         <div id="planContent">
           <div class="empty-state">
@@ -2392,6 +3031,90 @@ tbody tr:last-child td {
         </div>
       </div>
     </div>
+
+    <!-- Tab: Chaos Engineering -->
+    <div class="tab-panel" id="tab-chaos">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;opacity:0.6"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            Chaos Engineering
+          </span>
+          <span class="card-badge" style="background:var(--red-muted);color:var(--red);font-size:0.65rem">DESTRUCTIVE</span>
+        </div>
+        <div class="card-body">
+          <!-- Scenario selector -->
+          <div class="chaos-controls">
+            <div class="chaos-field">
+              <label>Scenario</label>
+              <select id="chaosScenarioSelect"><option value="">Loading...</option></select>
+            </div>
+            <div class="chaos-field">
+              <label>Target VM</label>
+              <select id="chaosTargetSelect"><option value="">Select target...</option></select>
+            </div>
+            <div class="chaos-actions">
+              <button class="btn-simulate" id="chaosSimulateBtn" onclick="chaosSimulate()" disabled>Simulate</button>
+              <button class="btn-execute-chaos" id="chaosExecuteBtn" onclick="chaosExecute()" disabled>Execute</button>
+            </div>
+          </div>
+
+          <!-- Simulation results -->
+          <div class="chaos-sim-results" id="chaosSimResults">
+            <div class="chaos-sim-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              Blast Radius Simulation
+            </div>
+            <div class="chaos-blast-list" id="chaosBlastList"></div>
+            <div class="chaos-sim-stats" id="chaosSimStats"></div>
+            <div class="chaos-sim-recommendation" id="chaosSimRec"></div>
+          </div>
+
+          <!-- Live execution view -->
+          <div class="chaos-execution" id="chaosExecution">
+            <div class="chaos-exec-header">
+              <span class="chaos-exec-status-badge executing" id="chaosExecBadge">Executing</span>
+              <span class="chaos-exec-timer" id="chaosExecTimer">00:00</span>
+            </div>
+            <div class="chaos-exec-phases" id="chaosExecPhases">
+              <div class="chaos-phase" data-phase="executing"></div>
+              <div class="chaos-phase" data-phase="recovering"></div>
+              <div class="chaos-phase" data-phase="verifying"></div>
+              <div class="chaos-phase" data-phase="completed"></div>
+            </div>
+            <div class="chaos-exec-log" id="chaosExecLog"></div>
+          </div>
+
+          <!-- Results comparison -->
+          <div class="chaos-results" id="chaosResults">
+            <div class="chaos-verdict" id="chaosVerdict">
+              <div class="chaos-verdict-label">Verdict</div>
+              <div class="chaos-verdict-value pass" id="chaosVerdictValue">PASS</div>
+            </div>
+            <div class="chaos-resilience-score">
+              <div class="chaos-resilience-number" id="chaosResilienceScore">--</div>
+              <div class="chaos-resilience-label">Resilience Score</div>
+            </div>
+            <div class="chaos-comparison" id="chaosComparison"></div>
+            <div style="font-size:0.78rem;font-weight:600;color:var(--text-secondary);margin-bottom:8px">What happened</div>
+            <div class="chaos-event-log" id="chaosEventLog"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chaos history -->
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Past Chaos Runs</span>
+          <span class="card-badge" id="chaosHistoryCount" style="background:rgba(255,255,255,0.06);color:var(--text-secondary)">0</span>
+        </div>
+        <div class="card-body flush">
+          <div id="chaosHistoryList">
+            <div style="text-align:center;color:var(--text-tertiary);padding:24px;font-size:0.78rem">No past chaos runs</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Right Column: Event Stream -->
@@ -2472,6 +3195,13 @@ function connect() {
   evtSource.addEventListener('healing_failed', (e) => handleEvent(JSON.parse(e.data)));
   evtSource.addEventListener('healing_paused', (e) => handleEvent(JSON.parse(e.data)));
   evtSource.addEventListener('healing_escalated', (e) => handleEvent(JSON.parse(e.data)));
+
+  // Chaos engineering events
+  evtSource.addEventListener('chaos_simulated', (e) => handleChaosEvent('chaos_simulated', JSON.parse(e.data)));
+  evtSource.addEventListener('chaos_started', (e) => handleChaosEvent('chaos_started', JSON.parse(e.data)));
+  evtSource.addEventListener('chaos_recovery_detected', (e) => handleChaosEvent('chaos_recovery_detected', JSON.parse(e.data)));
+  evtSource.addEventListener('chaos_completed', (e) => handleChaosEvent('chaos_completed', JSON.parse(e.data)));
+  evtSource.addEventListener('chaos_failed', (e) => handleChaosEvent('chaos_failed', JSON.parse(e.data)));
 
   // Health check events — update gauges, sparklines, stat cards
   evtSource.addEventListener('health_check', (e) => {
@@ -3184,8 +3914,10 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
 
     // Lazy load
+    if (tab.dataset.tab === 'topology') refreshTopology();
     if (tab.dataset.tab === 'governance') loadAudit();
     if (tab.dataset.tab === 'incidents') loadIncidents();
+    if (tab.dataset.tab === 'chaos') loadChaosPanel();
   });
 });
 
@@ -3972,6 +4704,803 @@ async function loadPredictions() {
     // silently fail
   }
 }
+
+// ── Chaos Engineering ──────────────────────────────────
+var chaosState = {
+  scenarios: [],
+  simulation: null,
+  activeRun: null,
+  history: [],
+  execStartTime: null,
+  execTimerInterval: null,
+  execLogEntries: [],
+};
+
+function loadChaosPanel() {
+  loadChaosScenarios();
+  loadChaosStatus();
+  loadChaosHistory();
+  populateChaosTargets();
+}
+
+async function loadChaosScenarios() {
+  try {
+    var res = await fetch('/api/chaos/scenarios');
+    var data = await res.json();
+    chaosState.scenarios = Array.isArray(data) ? data : (data.scenarios || []);
+    var sel = document.getElementById('chaosScenarioSelect');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Select scenario...</option>';
+    chaosState.scenarios.forEach(function(s) {
+      var opt = document.createElement('option');
+      opt.value = s.id || s.name || s;
+      opt.textContent = s.label || s.name || s;
+      sel.appendChild(opt);
+    });
+    updateChaosButtons();
+  } catch(e) {}
+}
+
+function populateChaosTargets() {
+  var sel = document.getElementById('chaosTargetSelect');
+  if (!sel || !state.cluster) return;
+  sel.innerHTML = '<option value="">Select target...</option>';
+  var vms = (state.cluster.vms || []).filter(function(v) { return v.status === 'running'; });
+  vms.forEach(function(vm) {
+    var opt = document.createElement('option');
+    opt.value = vm.vmid || vm.id;
+    opt.textContent = (vm.name || 'VM') + ' (' + (vm.vmid || vm.id) + ')';
+    sel.appendChild(opt);
+  });
+}
+
+function updateChaosButtons() {
+  var scenario = document.getElementById('chaosScenarioSelect');
+  var target = document.getElementById('chaosTargetSelect');
+  var simBtn = document.getElementById('chaosSimulateBtn');
+  var execBtn = document.getElementById('chaosExecuteBtn');
+  if (!scenario || !simBtn || !execBtn) return;
+  var hasScenario = !!scenario.value;
+  var hasTarget = !!target.value;
+  simBtn.disabled = !hasScenario;
+  execBtn.disabled = !chaosState.simulation || !hasScenario;
+}
+
+// Wire up select change events
+document.getElementById('chaosScenarioSelect')?.addEventListener('change', function() {
+  chaosState.simulation = null;
+  document.getElementById('chaosSimResults')?.classList.remove('visible');
+  document.getElementById('chaosResults')?.classList.remove('visible');
+  updateChaosButtons();
+});
+document.getElementById('chaosTargetSelect')?.addEventListener('change', updateChaosButtons);
+
+async function chaosSimulate() {
+  var scenario = document.getElementById('chaosScenarioSelect')?.value;
+  var target = document.getElementById('chaosTargetSelect')?.value;
+  if (!scenario) return;
+  var simBtn = document.getElementById('chaosSimulateBtn');
+  if (simBtn) { simBtn.disabled = true; simBtn.textContent = 'Simulating...'; }
+  try {
+    var body = { scenario: scenario, params: {} };
+    if (target) body.params.vmid = parseInt(target);
+    var res = await fetch('/api/chaos/simulate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    var data = await res.json();
+    if (data.error) { alert('Simulation error: ' + data.error); return; }
+    chaosState.simulation = data;
+    renderChaosSimulation(data);
+  } catch(e) {
+    alert('Failed to simulate: ' + e.message);
+  } finally {
+    if (simBtn) { simBtn.disabled = false; simBtn.textContent = 'Simulate'; }
+    updateChaosButtons();
+  }
+}
+
+function renderChaosSimulation(sim) {
+  var panel = document.getElementById('chaosSimResults');
+  if (!panel) return;
+
+  // Blast radius list
+  var blastList = document.getElementById('chaosBlastList');
+  var affected = sim.blast_radius || sim.blastRadius || [];
+  blastList.innerHTML = affected.map(function(item) {
+    var impact = item.impact || 'direct';
+    var dotClass = impact === 'direct' ? 'direct' : impact === 'indirect' ? 'indirect' : 'safe';
+    return '<div class="chaos-blast-item">' +
+      '<span class="chaos-blast-dot ' + dotClass + '"></span>' +
+      '<span>' + escapeHtml(item.name || item.vmid || item.id || 'Unknown') + '</span>' +
+      '<span style="margin-left:auto;color:var(--text-tertiary);font-size:0.71rem">' + escapeHtml(impact) + '</span>' +
+    '</div>';
+  }).join('');
+
+  // Stats
+  var recoveryTime = sim.predicted_recovery_time || sim.predictedRecoveryTime || '--';
+  var riskScore = sim.risk_score != null ? sim.risk_score : (sim.riskScore != null ? sim.riskScore : '--');
+  var riskClass = riskScore === '--' ? '' : riskScore <= 33 ? 'risk-low' : riskScore <= 66 ? 'risk-medium' : 'risk-high';
+
+  document.getElementById('chaosSimStats').innerHTML =
+    '<div class="chaos-sim-stat"><div class="chaos-sim-stat-label">Affected VMs</div><div class="chaos-sim-stat-value">' + affected.length + '</div></div>' +
+    '<div class="chaos-sim-stat"><div class="chaos-sim-stat-label">Recovery Time</div><div class="chaos-sim-stat-value">' + escapeHtml(String(recoveryTime)) + '</div></div>' +
+    '<div class="chaos-sim-stat"><div class="chaos-sim-stat-label">Risk Score</div><div class="chaos-sim-stat-value ' + riskClass + '">' + riskScore + '</div></div>';
+
+  // Recommendation
+  var rec = sim.recommendation || sim.message || 'Review the blast radius before executing.';
+  document.getElementById('chaosSimRec').textContent = rec;
+
+  panel.classList.add('visible');
+}
+
+async function chaosExecute() {
+  var scenario = document.getElementById('chaosScenarioSelect')?.value;
+  var target = document.getElementById('chaosTargetSelect')?.value;
+  if (!scenario) return;
+  if (!confirm('This will execute a destructive chaos test on your infrastructure. Continue?')) return;
+  var execBtn = document.getElementById('chaosExecuteBtn');
+  if (execBtn) { execBtn.disabled = true; execBtn.textContent = 'Starting...'; }
+  try {
+    var body = { scenario: scenario, params: {} };
+    if (target) body.params.vmid = parseInt(target);
+    var res = await fetch('/api/chaos/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    var data = await res.json();
+    if (data.error) { alert('Execution error: ' + data.error); return; }
+    chaosState.activeRun = data;
+    chaosState.execStartTime = Date.now();
+    chaosState.execLogEntries = [];
+    showChaosExecution(data);
+    startChaosTimer();
+  } catch(e) {
+    alert('Failed to execute: ' + e.message);
+  } finally {
+    if (execBtn) { execBtn.textContent = 'Execute'; }
+    updateChaosButtons();
+  }
+}
+
+function showChaosExecution(run) {
+  document.getElementById('chaosSimResults')?.classList.remove('visible');
+  document.getElementById('chaosResults')?.classList.remove('visible');
+  var panel = document.getElementById('chaosExecution');
+  if (panel) panel.classList.add('visible');
+  updateChaosExecPhase(run.phase || run.status || 'executing');
+  addChaosLogEntry('Chaos test started: ' + (run.scenario || '') + ' (Run ID: ' + (run.run_id || run.id || '--') + ')');
+}
+
+function updateChaosExecPhase(phase) {
+  var badge = document.getElementById('chaosExecBadge');
+  if (badge) {
+    badge.className = 'chaos-exec-status-badge ' + phase;
+    badge.textContent = phase.charAt(0).toUpperCase() + phase.slice(1);
+  }
+  var phases = ['executing', 'recovering', 'verifying', 'completed'];
+  var idx = phases.indexOf(phase);
+  document.querySelectorAll('.chaos-phase').forEach(function(el, i) {
+    el.classList.remove('active', 'done', 'failed');
+    if (phase === 'failed') {
+      if (i <= Math.max(idx, 0)) el.classList.add('failed');
+    } else if (i < idx) {
+      el.classList.add('done');
+    } else if (i === idx) {
+      el.classList.add('active');
+    }
+  });
+}
+
+function startChaosTimer() {
+  if (chaosState.execTimerInterval) clearInterval(chaosState.execTimerInterval);
+  chaosState.execTimerInterval = setInterval(function() {
+    if (!chaosState.execStartTime) return;
+    var elapsed = Math.floor((Date.now() - chaosState.execStartTime) / 1000);
+    var mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    var secs = String(elapsed % 60).padStart(2, '0');
+    var el = document.getElementById('chaosExecTimer');
+    if (el) el.textContent = mins + ':' + secs;
+  }, 1000);
+}
+
+function stopChaosTimer() {
+  if (chaosState.execTimerInterval) {
+    clearInterval(chaosState.execTimerInterval);
+    chaosState.execTimerInterval = null;
+  }
+}
+
+function addChaosLogEntry(msg) {
+  var now = new Date();
+  var time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0');
+  chaosState.execLogEntries.push({ time: time, msg: msg });
+  var log = document.getElementById('chaosExecLog');
+  if (!log) return;
+  var entry = document.createElement('div');
+  entry.className = 'chaos-log-entry';
+  entry.innerHTML = '<span class="chaos-log-time">' + time + '</span>' + escapeHtml(msg);
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+}
+
+function handleChaosEvent(type, event) {
+  var d = event.data || event;
+  switch (type) {
+    case 'chaos_simulated':
+      // Handled via direct API response
+      break;
+    case 'chaos_started':
+      chaosState.activeRun = d;
+      chaosState.execStartTime = chaosState.execStartTime || Date.now();
+      showChaosExecution(d);
+      startChaosTimer();
+      addChaosLogEntry('Chaos injection active');
+      break;
+    case 'chaos_recovery_detected':
+      updateChaosExecPhase('recovering');
+      addChaosLogEntry('Recovery detected: ' + (d.message || d.detail || 'System recovering'));
+      break;
+    case 'chaos_completed':
+      updateChaosExecPhase('completed');
+      stopChaosTimer();
+      addChaosLogEntry('Chaos test completed');
+      chaosState.activeRun = null;
+      setTimeout(function() { renderChaosResults(d); }, 800);
+      loadChaosHistory();
+      updateChaosButtons();
+      break;
+    case 'chaos_failed':
+      updateChaosExecPhase('failed');
+      stopChaosTimer();
+      addChaosLogEntry('Chaos test FAILED: ' + (d.error || d.message || 'Unknown error'));
+      chaosState.activeRun = null;
+      setTimeout(function() { renderChaosResults(d); }, 800);
+      loadChaosHistory();
+      updateChaosButtons();
+      break;
+  }
+  // Also push to main event log
+  handleEvent(event);
+}
+
+function renderChaosResults(data) {
+  var panel = document.getElementById('chaosResults');
+  if (!panel) return;
+
+  // Verdict
+  var verdict = (data.verdict || 'UNKNOWN').toUpperCase();
+  var verdictClass = verdict === 'PASS' ? 'pass' : verdict === 'PARTIAL' ? 'partial' : 'fail';
+  var verdictEl = document.getElementById('chaosVerdictValue');
+  if (verdictEl) { verdictEl.textContent = verdict; verdictEl.className = 'chaos-verdict-value ' + verdictClass; }
+
+  // Resilience score
+  var score = data.resilience_score != null ? data.resilience_score : (data.resilienceScore != null ? data.resilienceScore : '--');
+  var scoreEl = document.getElementById('chaosResilienceScore');
+  if (scoreEl) {
+    scoreEl.textContent = score !== '--' ? score + '%' : '--';
+    scoreEl.style.color = score === '--' ? 'var(--text-tertiary)' : score >= 80 ? 'var(--teal)' : score >= 50 ? 'var(--amber)' : 'var(--red)';
+  }
+
+  // Comparison: predicted vs actual
+  var predicted = data.predicted_recovery_time || chaosState.simulation?.predicted_recovery_time || chaosState.simulation?.predictedRecoveryTime || '--';
+  var actual = data.actual_recovery_time || data.actualRecoveryTime || '--';
+  document.getElementById('chaosComparison').innerHTML =
+    '<div class="chaos-compare-cell"><div class="chaos-compare-label">Predicted Recovery</div><div class="chaos-compare-value">' + escapeHtml(String(predicted)) + '</div></div>' +
+    '<div class="chaos-compare-cell"><div class="chaos-compare-label">Actual Recovery</div><div class="chaos-compare-value">' + escapeHtml(String(actual)) + '</div></div>';
+
+  // Event log
+  var events = data.events || data.timeline || [];
+  var logEl = document.getElementById('chaosEventLog');
+  if (logEl) {
+    logEl.innerHTML = events.map(function(evt) {
+      var dotType = evt.type === 'incident' ? 'incident' : evt.type === 'heal' || evt.type === 'healing' ? 'heal' : 'action';
+      return '<div class="chaos-event-entry">' +
+        '<span class="chaos-event-dot ' + dotType + '"></span>' +
+        '<span>' + escapeHtml(evt.message || evt.description || evt.type || '') + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  document.getElementById('chaosExecution')?.classList.remove('visible');
+  panel.classList.add('visible');
+}
+
+async function loadChaosStatus() {
+  try {
+    var res = await fetch('/api/chaos/status');
+    var data = await res.json();
+    if (data && data.run_id) {
+      chaosState.activeRun = data;
+      chaosState.execStartTime = data.started_at ? new Date(data.started_at).getTime() : Date.now();
+      showChaosExecution(data);
+      startChaosTimer();
+    }
+  } catch(e) {}
+}
+
+async function loadChaosHistory() {
+  try {
+    var res = await fetch('/api/chaos/history');
+    var data = await res.json();
+    chaosState.history = Array.isArray(data) ? data : (data.runs || []);
+    renderChaosHistory();
+  } catch(e) {}
+}
+
+function renderChaosHistory() {
+  var list = document.getElementById('chaosHistoryList');
+  var badge = document.getElementById('chaosHistoryCount');
+  if (!list) return;
+  if (badge) badge.textContent = chaosState.history.length;
+  if (!chaosState.history.length) {
+    list.innerHTML = '<div style="text-align:center;color:var(--text-tertiary);padding:24px;font-size:0.78rem">No past chaos runs</div>';
+    return;
+  }
+  list.innerHTML = chaosState.history.map(function(run) {
+    var verdict = (run.verdict || 'unknown').toUpperCase();
+    var verdictColor = verdict === 'PASS' ? 'var(--teal)' : verdict === 'PARTIAL' ? 'var(--amber)' : 'var(--red)';
+    var when = run.completed_at || run.started_at || '';
+    var timeStr = when ? new Date(when).toLocaleString() : '--';
+    return '<div class="chaos-history-item">' +
+      '<span>' + escapeHtml(run.scenario || run.name || 'Unknown') + '</span>' +
+      '<span style="color:' + verdictColor + ';font-weight:600">' + verdict + '</span>' +
+      '<span class="chaos-history-meta">' + timeStr + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+// ── Topology Map ────────────────────────────────────────
+
+var topoState = {
+  selectedVm: null,
+  vmEffects: {},
+  lastCluster: null,
+};
+
+function svgEl(tag, attrs) {
+  var el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  if (attrs) {
+    var keys = Object.keys(attrs);
+    for (var ki = 0; ki < keys.length; ki++) {
+      el.setAttribute(keys[ki], String(attrs[keys[ki]]));
+    }
+  }
+  return el;
+}
+
+function vmStatusColor(status) {
+  if (status === 'running') return 'var(--teal)';
+  if (status === 'stopped') return 'var(--red)';
+  if (status === 'paused') return 'var(--amber)';
+  return 'var(--text-tertiary)';
+}
+
+function vmStatusClass(status) {
+  if (status === 'running') return 'running';
+  if (status === 'stopped') return 'stopped';
+  if (status === 'paused') return 'paused';
+  return 'stopped';
+}
+
+function topoBarColor(pct) {
+  if (pct > 85) return 'var(--red)';
+  if (pct > 65) return 'var(--amber)';
+  return 'var(--teal)';
+}
+
+function topoFmtBytes(mb) {
+  if (mb >= 1024) return (mb / 1024).toFixed(1) + ' GB';
+  return mb + ' MB';
+}
+
+function topoFmtUptime(seconds) {
+  if (!seconds || seconds < 0) return '-';
+  var d = Math.floor(seconds / 86400);
+  var h = Math.floor((seconds % 86400) / 3600);
+  var m = Math.floor((seconds % 3600) / 60);
+  if (d > 0) return d + 'd ' + h + 'h';
+  if (h > 0) return h + 'h ' + m + 'm';
+  return m + 'm';
+}
+
+async function refreshTopology() {
+  try {
+    var data = await fetch('/api/cluster').then(function(r) { return r.json(); });
+    topoState.lastCluster = data;
+    renderTopology(data);
+  } catch(e) {}
+}
+
+function renderTopology(data) {
+  var svg = document.getElementById('topoSvg');
+  if (!svg) return;
+  var container = document.getElementById('topoContainer');
+  var W = container.clientWidth || 900;
+
+  var nodes = data.nodes || [];
+  var vms = data.vms || [];
+  var storage = data.storage || [];
+
+  var nodeBoxW = 220, nodeBoxH = 90;
+  var vmBaseR = 18;
+  var storageW = 140, storageH = 52;
+
+  var nodeY = 60;
+  var vmY = 240;
+  var maxPerRow = 8;
+  var maxVmsPerNode = 1;
+  for (var ni = 0; ni < nodes.length; ni++) {
+    var cnt = vms.filter(function(v) { return v.node === nodes[ni].name; }).length;
+    if (cnt > maxVmsPerNode) maxVmsPerNode = cnt;
+  }
+  var vmRows = Math.ceil(maxVmsPerNode / maxPerRow);
+  var storageY_base = vmY + vmRows * 80 + 100;
+  var totalH = storageY_base + (storage.length > 0 ? storageH + 40 : 0) + 60;
+
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + totalH);
+  svg.style.minHeight = totalH + 'px';
+  svg.innerHTML = '';
+
+  // Defs
+  var defs = svgEl('defs');
+  var glowF = svgEl('filter', { id: 'topoGlow', x: '-50%', y: '-50%', width: '200%', height: '200%' });
+  var feGB = svgEl('feGaussianBlur', { stdDeviation: '3', result: 'coloredBlur' });
+  var feM = svgEl('feMerge');
+  feM.appendChild(svgEl('feMergeNode', { 'in': 'coloredBlur' }));
+  feM.appendChild(svgEl('feMergeNode', { 'in': 'SourceGraphic' }));
+  glowF.appendChild(feGB);
+  glowF.appendChild(feM);
+  defs.appendChild(glowF);
+
+  var grd = svgEl('radialGradient', { id: 'topoGridFade', cx: '50%', cy: '40%', r: '60%' });
+  grd.appendChild(svgEl('stop', { offset: '0%', 'stop-color': 'rgba(10,205,170,0.04)' }));
+  grd.appendChild(svgEl('stop', { offset: '100%', 'stop-color': 'rgba(10,205,170,0)' }));
+  defs.appendChild(grd);
+  svg.appendChild(defs);
+
+  // Grid dots
+  var gridG = svgEl('g', { opacity: '0.3' });
+  for (var gx = 20; gx < W; gx += 30) {
+    for (var gy = 20; gy < totalH; gy += 30) {
+      gridG.appendChild(svgEl('circle', { cx: gx, cy: gy, r: 0.5, fill: 'var(--text-tertiary)' }));
+    }
+  }
+  svg.appendChild(gridG);
+  svg.appendChild(svgEl('rect', { x: 0, y: 0, width: W, height: totalH, fill: 'url(#topoGridFade)' }));
+
+  // Section labels
+  var lblG = svgEl('g');
+  function mkLbl(text, x, y) {
+    var t = svgEl('text', { x: x, y: y, fill: 'var(--text-tertiary)', 'font-family': 'var(--font-mono)', 'font-size': '9', 'letter-spacing': '0.1em', opacity: '0.5' });
+    t.textContent = text;
+    return t;
+  }
+  lblG.appendChild(mkLbl('NODES', 16, nodeY - 8));
+  if (vms.length > 0) lblG.appendChild(mkLbl('VIRTUAL MACHINES', 16, vmY - 50));
+  if (storage.length > 0) lblG.appendChild(mkLbl('STORAGE', 16, storageY_base - 8));
+  svg.appendChild(lblG);
+
+  // ---- Nodes ----
+  var nodePositions = {};
+  var nodeSpacing = Math.min(300, (W - 40) / Math.max(1, nodes.length));
+  var nodeStartX = (W - nodeSpacing * (nodes.length - 1) - nodeBoxW) / 2;
+
+  for (var i = 0; i < nodes.length; i++) {
+    var node = nodes[i];
+    var nx = nodes.length === 1 ? (W - nodeBoxW) / 2 : nodeStartX + i * nodeSpacing;
+    var ny = nodeY;
+    nodePositions[node.name] = { x: nx + nodeBoxW / 2, y: ny + nodeBoxH / 2 };
+
+    var g = svgEl('g', { class: 'topo-node-box', transform: 'translate(' + nx + ',' + ny + ')' });
+    g.appendChild(svgEl('rect', { x: -2, y: -2, width: nodeBoxW + 4, height: nodeBoxH + 4, rx: 12, ry: 12, fill: 'none', stroke: 'var(--teal)', 'stroke-width': 0.5, opacity: 0.15 }));
+    g.appendChild(svgEl('rect', { x: 0, y: 0, width: nodeBoxW, height: nodeBoxH, class: 'topo-node-rect' }));
+
+    var sCls = (node.status === 'online') ? 'online' : (node.status === 'offline' ? 'offline' : 'unknown');
+    g.appendChild(svgEl('circle', { cx: 16, cy: 20, class: 'topo-status-dot ' + sCls }));
+
+    var nt = svgEl('text', { x: 26, y: 24, class: 'topo-node-label' });
+    nt.textContent = node.name;
+    g.appendChild(nt);
+
+    var cpuPct = node.cpu_pct || 0;
+    g.appendChild(svgEl('rect', { x: 14, y: 38, width: nodeBoxW - 28, height: 6, class: 'topo-bar-bg' }));
+    g.appendChild(svgEl('rect', { x: 14, y: 38, width: Math.max(1, (nodeBoxW - 28) * cpuPct / 100), height: 6, class: 'topo-bar-fill', fill: topoBarColor(cpuPct) }));
+    var cl = svgEl('text', { x: 14, y: 35, class: 'topo-bar-label' });
+    cl.textContent = 'CPU ' + Math.round(cpuPct) + '% (' + (node.cpu_cores || '?') + ' cores)';
+    g.appendChild(cl);
+
+    var ramPct = node.ram_pct || (node.ram_mb ? (node.ram_used_mb || 0) / node.ram_mb * 100 : 0);
+    g.appendChild(svgEl('rect', { x: 14, y: 60, width: nodeBoxW - 28, height: 6, class: 'topo-bar-bg' }));
+    g.appendChild(svgEl('rect', { x: 14, y: 60, width: Math.max(1, (nodeBoxW - 28) * ramPct / 100), height: 6, class: 'topo-bar-fill', fill: topoBarColor(ramPct) }));
+    var rl = svgEl('text', { x: 14, y: 57, class: 'topo-bar-label' });
+    rl.textContent = 'RAM ' + Math.round(ramPct) + '% (' + topoFmtBytes(node.ram_mb || 0) + ')';
+    g.appendChild(rl);
+
+    svg.appendChild(g);
+  }
+
+  // ---- VMs ----
+  for (var ndi = 0; ndi < nodes.length; ndi++) {
+    var nd = nodes[ndi];
+    var nodeVms = vms.filter(function(v) { return v.node === nd.name; });
+    if (nodeVms.length === 0) continue;
+
+    var nodeCx = nodePositions[nd.name].x;
+    var nodeBy = nodePositions[nd.name].y + nodeBoxH / 2;
+
+    for (var vi = 0; vi < nodeVms.length; vi++) {
+      var vm = nodeVms[vi];
+      var row = Math.floor(vi / maxPerRow);
+      var inRow = vi % maxPerRow;
+      var rowCount = Math.min(maxPerRow, nodeVms.length - row * maxPerRow);
+
+      var hSpacing = Math.min(80, (W - 80) / Math.max(1, rowCount));
+      var hStart = nodeCx - (rowCount - 1) * hSpacing / 2;
+      var fx = hStart + inRow * hSpacing;
+      var fy = vmY + row * 80;
+
+      var ramMb = vm.ram_mb || (vm.maxmem ? vm.maxmem / (1024 * 1024) : 512);
+      var r = Math.max(14, Math.min(32, vmBaseR + Math.log2(Math.max(1, ramMb / 512)) * 4));
+
+      var cls = vmStatusClass(vm.status);
+
+      // Connection line
+      var line = svgEl('path', {
+        d: 'M' + nodeCx + ',' + (nodeBy + 10) + ' C' + nodeCx + ',' + (nodeBy + 50) + ' ' + fx + ',' + (fy - 40) + ' ' + fx + ',' + (fy - r),
+        class: 'topo-link ' + cls,
+        'data-vmid': vm.vmid,
+      });
+      svg.appendChild(line);
+
+      // VM group
+      var vg = svgEl('g', { class: 'topo-vm-group', 'data-vmid': vm.vmid, transform: 'translate(' + fx + ',' + fy + ')' });
+
+      if (cls === 'running') {
+        vg.appendChild(svgEl('circle', { cx: 0, cy: 0, r: r + 6, class: 'topo-vm-glow running', filter: 'url(#topoGlow)' }));
+      }
+
+      var effect = topoState.vmEffects[vm.vmid];
+      if (effect) {
+        if (effect.type === 'incident') {
+          vg.appendChild(svgEl('circle', { cx: 0, cy: 0, r: r + 5, class: 'topo-vm-incident-ring' }));
+        } else if (effect.type === 'healing') {
+          vg.appendChild(svgEl('circle', { cx: 0, cy: 0, r: r + 5, class: 'topo-vm-healing-ring' }));
+        } else if (effect.type === 'healed') {
+          vg.appendChild(svgEl('circle', { cx: 0, cy: 0, r: r + 5, class: 'topo-vm-healed-flash' }));
+          if (Date.now() - effect.ts > 1500) delete topoState.vmEffects[vm.vmid];
+        }
+      }
+
+      vg.appendChild(svgEl('circle', { cx: 0, cy: 0, r: r, class: 'topo-vm-circle ' + cls }));
+
+      var dName = vm.name || ('vm-' + vm.vmid);
+      var sName = dName.length > 10 ? dName.substring(0, 9) + '..' : dName;
+      var nmT = svgEl('text', { x: 0, y: r + 14, class: 'topo-vm-label' });
+      nmT.textContent = sName;
+      vg.appendChild(nmT);
+
+      var idT = svgEl('text', { x: 0, y: r + 24, class: 'topo-vm-id-label' });
+      idT.textContent = 'ID:' + vm.vmid;
+      vg.appendChild(idT);
+
+      (function(vmRef) {
+        vg.addEventListener('mouseenter', function(e) { showTopoTooltip(e, vmRef); });
+        vg.addEventListener('mousemove', function(e) { moveTopoTooltip(e); });
+        vg.addEventListener('mouseleave', function() { hideTopoTooltip(); });
+        vg.addEventListener('click', function() { selectTopoVm(vmRef); });
+      })(vm);
+
+      svg.appendChild(vg);
+    }
+  }
+
+  // ---- Storage ----
+  if (storage.length > 0) {
+    var stSpacing = Math.min(160, (W - 40) / Math.max(1, storage.length));
+    var stStartX = (W - stSpacing * (storage.length - 1) - storageW) / 2;
+
+    for (var si = 0; si < storage.length; si++) {
+      var st = storage[si];
+      var sx = storage.length === 1 ? (W - storageW) / 2 : stStartX + si * stSpacing;
+      var sy = storageY_base;
+
+      var sg = svgEl('g', { transform: 'translate(' + sx + ',' + sy + ')' });
+      sg.appendChild(svgEl('rect', { x: 0, y: 0, width: storageW, height: storageH, class: 'topo-storage-rect' }));
+
+      var snT = svgEl('text', { x: 10, y: 16, class: 'topo-storage-label' });
+      snT.textContent = st.storage || st.name || 'storage';
+      sg.appendChild(snT);
+
+      var tGB = st.total ? (st.total / (1024 * 1024 * 1024)).toFixed(0) : (st.total_gb || 0);
+      var uGB = st.used ? (st.used / (1024 * 1024 * 1024)).toFixed(0) : (st.used_gb || 0);
+      var spct = tGB > 0 ? (uGB / tGB * 100) : 0;
+
+      var suT = svgEl('text', { x: 10, y: 28, class: 'topo-storage-sub' });
+      suT.textContent = uGB + ' / ' + tGB + ' GB (' + Math.round(spct) + '%)';
+      sg.appendChild(suT);
+
+      var bW = storageW - 20;
+      sg.appendChild(svgEl('rect', { x: 10, y: 35, width: bW, height: 5, class: 'topo-storage-bar-bg' }));
+      sg.appendChild(svgEl('rect', { x: 10, y: 35, width: Math.max(1, bW * spct / 100), height: 5, class: 'topo-storage-bar-fill', fill: topoBarColor(spct) }));
+
+      svg.appendChild(sg);
+    }
+  }
+
+  if (topoState.selectedVm) highlightVm(topoState.selectedVm.vmid);
+}
+
+function showTopoTooltip(e, vm) {
+  var tip = document.getElementById('topoTooltip');
+  if (!tip) return;
+  var dot = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:' + vmStatusColor(vm.status) + '"></span>';
+  var rmb = vm.ram_mb || (vm.maxmem ? Math.round(vm.maxmem / (1024 * 1024)) : 0);
+  var dsk = vm.disk_gb || (vm.maxdisk ? (vm.maxdisk / (1024 * 1024 * 1024)).toFixed(1) : '-');
+  var upt = vm.uptime ? topoFmtUptime(vm.uptime) : '-';
+
+  tip.innerHTML = '<div class="tt-title">' + dot + ' ' + escapeHtml(vm.name || 'VM ' + vm.vmid) + '</div>' +
+    '<div class="tt-row"><span class="tt-key">VMID</span><span class="tt-val">' + vm.vmid + '</span></div>' +
+    '<div class="tt-row"><span class="tt-key">Status</span><span class="tt-val">' + (vm.status || 'unknown') + '</span></div>' +
+    '<div class="tt-row"><span class="tt-key">Node</span><span class="tt-val">' + (vm.node || '-') + '</span></div>' +
+    '<div class="tt-row"><span class="tt-key">CPU</span><span class="tt-val">' + (vm.cpu_cores || vm.cpus || '-') + ' cores</span></div>' +
+    '<div class="tt-row"><span class="tt-key">RAM</span><span class="tt-val">' + topoFmtBytes(rmb) + '</span></div>' +
+    '<div class="tt-row"><span class="tt-key">Disk</span><span class="tt-val">' + dsk + ' GB</span></div>' +
+    '<div class="tt-row"><span class="tt-key">Uptime</span><span class="tt-val">' + upt + '</span></div>';
+  tip.classList.add('visible');
+  moveTopoTooltip(e);
+}
+
+function moveTopoTooltip(e) {
+  var tip = document.getElementById('topoTooltip');
+  var container = document.getElementById('topoContainer');
+  if (!tip || !container) return;
+  var rect = container.getBoundingClientRect();
+  var x = e.clientX - rect.left + 14;
+  var y = e.clientY - rect.top + 14;
+  if (x + 280 > rect.width) x = e.clientX - rect.left - 290;
+  if (y + 200 > rect.height) y = e.clientY - rect.top - 200;
+  tip.style.left = x + 'px';
+  tip.style.top = y + 'px';
+}
+
+function hideTopoTooltip() {
+  var tip = document.getElementById('topoTooltip');
+  if (tip) tip.classList.remove('visible');
+}
+
+function selectTopoVm(vm) {
+  topoState.selectedVm = vm;
+  highlightVm(vm.vmid);
+
+  var panel = document.getElementById('topoDetailPanel');
+  var content = document.getElementById('topoDetailContent');
+  if (!panel || !content) return;
+
+  var sCls = vmStatusClass(vm.status);
+  var rmb = vm.ram_mb || (vm.maxmem ? Math.round(vm.maxmem / (1024 * 1024)) : 0);
+  var dsk = vm.disk_gb || (vm.maxdisk ? (vm.maxdisk / (1024 * 1024 * 1024)).toFixed(1) : '-');
+  var upt = vm.uptime ? topoFmtUptime(vm.uptime) : '-';
+  var cpuU = vm.cpu_pct !== undefined ? Math.round(vm.cpu_pct) + '%' : (vm.cpu !== undefined ? (vm.cpu * 100).toFixed(1) + '%' : '-');
+
+  content.innerHTML =
+    '<div class="topo-detail-title">' + escapeHtml(vm.name || 'VM ' + vm.vmid) + '</div>' +
+    '<div class="topo-detail-status"><div class="dot ' + sCls + '"></div> ' + (vm.status || 'unknown') + '</div>' +
+    '<div class="topo-detail-section">' +
+      '<div class="topo-detail-section-title">Identification</div>' +
+      '<div class="topo-detail-row"><span class="dk">VMID</span><span class="dv">' + vm.vmid + '</span></div>' +
+      '<div class="topo-detail-row"><span class="dk">Node</span><span class="dv">' + (vm.node || '-') + '</span></div>' +
+      '<div class="topo-detail-row"><span class="dk">Type</span><span class="dv">' + (vm.type || 'qemu') + '</span></div>' +
+    '</div>' +
+    '<div class="topo-detail-section">' +
+      '<div class="topo-detail-section-title">Resources</div>' +
+      '<div class="topo-detail-row"><span class="dk">CPU Cores</span><span class="dv">' + (vm.cpu_cores || vm.cpus || '-') + '</span></div>' +
+      '<div class="topo-detail-row"><span class="dk">CPU Usage</span><span class="dv">' + cpuU + '</span></div>' +
+      '<div class="topo-detail-row"><span class="dk">RAM</span><span class="dv">' + topoFmtBytes(rmb) + '</span></div>' +
+      '<div class="topo-detail-row"><span class="dk">Disk</span><span class="dv">' + dsk + ' GB</span></div>' +
+    '</div>' +
+    '<div class="topo-detail-section">' +
+      '<div class="topo-detail-section-title">Runtime</div>' +
+      '<div class="topo-detail-row"><span class="dk">Uptime</span><span class="dv">' + upt + '</span></div>' +
+      '<div class="topo-detail-row"><span class="dk">PID</span><span class="dv">' + (vm.pid || '-') + '</span></div>' +
+    '</div>';
+
+  panel.classList.add('open');
+}
+
+function highlightVm(vmid) {
+  document.querySelectorAll('.topo-link.highlight').forEach(function(el) { el.classList.remove('highlight'); });
+  document.querySelectorAll('.topo-vm-group.selected').forEach(function(el) { el.classList.remove('selected'); });
+  var link = document.querySelector('.topo-link[data-vmid="' + vmid + '"]');
+  if (link) link.classList.add('highlight');
+  var vmG = document.querySelector('.topo-vm-group[data-vmid="' + vmid + '"]');
+  if (vmG) vmG.classList.add('selected');
+}
+
+// Close detail panel
+(function() {
+  var closeBtn = document.getElementById('topoDetailClose');
+  if (closeBtn) closeBtn.addEventListener('click', function() {
+    var p = document.getElementById('topoDetailPanel');
+    if (p) p.classList.remove('open');
+    topoState.selectedVm = null;
+    document.querySelectorAll('.topo-link.highlight').forEach(function(el) { el.classList.remove('highlight'); });
+  });
+})();
+
+// Topology SSE event handler
+function handleTopoEvent(event) {
+  if (!event || !event.type) return;
+  var d = event.data || {};
+  var vmid = d.vmid || d.vm_id;
+  if (!vmid && d.target && typeof d.target === 'string') {
+    var m = d.target.match(/(\\d{3,})/);
+    if (m) vmid = parseInt(m[1]);
+  }
+  if (!vmid) return;
+
+  switch(event.type) {
+    case 'incident_opened':
+      topoState.vmEffects[vmid] = { type: 'incident', ts: Date.now() };
+      if (topoState.lastCluster) renderTopology(topoState.lastCluster);
+      break;
+    case 'healing_started':
+      topoState.vmEffects[vmid] = { type: 'healing', ts: Date.now() };
+      if (topoState.lastCluster) renderTopology(topoState.lastCluster);
+      break;
+    case 'healing_completed':
+    case 'incident_resolved':
+      topoState.vmEffects[vmid] = { type: 'healed', ts: Date.now() };
+      if (topoState.lastCluster) renderTopology(topoState.lastCluster);
+      setTimeout(function() { delete topoState.vmEffects[vmid]; if (topoState.lastCluster) renderTopology(topoState.lastCluster); }, 1500);
+      break;
+    case 'step_completed':
+      topoState.vmEffects[vmid] = { type: 'healed', ts: Date.now() };
+      if (topoState.lastCluster) renderTopology(topoState.lastCluster);
+      setTimeout(function() { delete topoState.vmEffects[vmid]; if (topoState.lastCluster) renderTopology(topoState.lastCluster); }, 1500);
+      break;
+  }
+}
+
+// Patch handleEvent for topology
+var _origHandleEvent = handleEvent;
+handleEvent = function(event) {
+  _origHandleEvent(event);
+  handleTopoEvent(event);
+};
+
+// Patch handleHealthCheck for live node resource bars
+var _origHandleHealthCheck = handleHealthCheck;
+handleHealthCheck = function(d) {
+  _origHandleHealthCheck(d);
+  var tp = document.getElementById('tab-topology');
+  if (tp && tp.classList.contains('active') && topoState.lastCluster) {
+    if (d && d.nodes && topoState.lastCluster.nodes) {
+      for (var hi = 0; hi < d.nodes.length; hi++) {
+        var hn = d.nodes[hi];
+        for (var ei = 0; ei < topoState.lastCluster.nodes.length; ei++) {
+          var en = topoState.lastCluster.nodes[ei];
+          if (en.name === hn.name || en.node === hn.node) {
+            if (hn.cpu_pct !== undefined) en.cpu_pct = hn.cpu_pct;
+            if (hn.ram_pct !== undefined) en.ram_pct = hn.ram_pct;
+          }
+        }
+      }
+      renderTopology(topoState.lastCluster);
+    }
+  }
+};
+
+// Auto-refresh topology every 30s
+setInterval(function() {
+  var tp = document.getElementById('tab-topology');
+  if (tp && tp.classList.contains('active')) refreshTopology();
+}, 30000);
+
+// Initial topology load
+refreshTopology();
 
 // ── Init ───────────────────────────────────────────────
 connect();

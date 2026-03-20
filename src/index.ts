@@ -19,6 +19,7 @@ import { DashboardServer } from "./frontends/dashboard/server.js";
 import { InfraWrapMCP } from "./frontends/mcp.js";
 import { AutopilotDaemon } from "./autopilot/daemon.js";
 import { HealingOrchestrator } from "./healing/orchestrator.js";
+import { ChaosEngine } from "./chaos/engine.js";
 import { join } from "path";
 import { mkdirSync } from "fs";
 
@@ -190,8 +191,9 @@ async function main() {
       await dashboard.start();
 
       // Telegram (if configured)
+      let fullBot: InfraWrapBot | undefined;
       if (config.telegram.botToken) {
-        const bot = new InfraWrapBot(
+        fullBot = new InfraWrapBot(
           {
             botToken: config.telegram.botToken,
             allowedUsers: config.telegram.allowedUsers,
@@ -201,7 +203,7 @@ async function main() {
           eventBus,
           governance,
         );
-        await bot.start();
+        await fullBot.start();
       }
 
       // Autopilot (if enabled)
@@ -237,6 +239,24 @@ async function main() {
       // Expose orchestrator on dashboard for API routes
       (dashboard as unknown as { healer: HealingOrchestrator }).healer = healer;
 
+      // Chaos engineering engine
+      const chaosEngine = new ChaosEngine({
+        agentCore,
+        toolRegistry: registry,
+        eventBus,
+        healingOrchestrator: healer,
+      });
+
+      // Expose on dashboard for API routes
+      (dashboard as unknown as { chaosEngine: ChaosEngine }).chaosEngine = chaosEngine;
+
+      // Wire chaos engine to Telegram bot
+      if (fullBot) {
+        fullBot.chaosEngine = chaosEngine;
+      }
+
+      console.log("  Chaos engineering engine ready");
+
       console.log("\nAll services running. Press Ctrl+C to stop.\n");
       break;
     }
@@ -255,8 +275,9 @@ async function main() {
       );
       await dashboard.start();
 
+      let devBot: InfraWrapBot | undefined;
       if (config.telegram.botToken) {
-        const bot = new InfraWrapBot(
+        devBot = new InfraWrapBot(
           {
             botToken: config.telegram.botToken,
             allowedUsers: config.telegram.allowedUsers,
@@ -266,7 +287,7 @@ async function main() {
           eventBus,
           governance,
         );
-        await bot.start();
+        await devBot.start();
       }
 
       // Self-healing orchestrator
@@ -283,6 +304,22 @@ async function main() {
         },
       });
       devHealer.start();
+
+      // Chaos engineering engine
+      const devChaosEngine = new ChaosEngine({
+        agentCore,
+        toolRegistry: registry,
+        eventBus,
+        healingOrchestrator: devHealer,
+      });
+
+      // Expose on dashboard for API routes
+      (dashboard as unknown as { chaosEngine: ChaosEngine }).chaosEngine = devChaosEngine;
+
+      // Wire chaos engine to Telegram bot
+      if (devBot) {
+        devBot.chaosEngine = devChaosEngine;
+      }
 
       const cli = new InfraWrapCLI(agentCore, registry, eventBus, governance);
       await cli.start();

@@ -21,6 +21,7 @@ import type {
   StorageInfo,
   Investigation,
 } from "../types.js";
+import type { ChaosEngine, BlastRadiusResult, ChaosRun } from "../chaos/engine.js";
 
 // ── Telegram MarkdownV2 Helpers ─────────────────────────────
 
@@ -586,6 +587,9 @@ export class InfraWrapBot {
   private eventBus: EventBus;
   private governanceEngine?: GovernanceEngine;
 
+  /** Set externally after construction (requires HealingOrchestrator). */
+  chaosEngine?: ChaosEngine;
+
   private allowedUsers: Set<number>;
   private pendingApprovals: Map<string, PendingApproval> = new Map();
   private progressMessages: Map<string, { chatId: number; messageId: number }> =
@@ -656,6 +660,7 @@ export class InfraWrapBot {
       { command: "audit", description: "Recent audit entries" },
       { command: "governance", description: "Governance status" },
       { command: "incidents", description: "Open & recent incidents" },
+      { command: "chaos", description: "Chaos engineering — /chaos help" },
     ]);
 
     // Register as the plan-level approval handler
@@ -837,6 +842,13 @@ export class InfraWrapBot {
         "  /audit — Recent audit trail",
         "  /governance — Governance status",
         "  /incidents — Open & recent incidents",
+        "",
+        "\u{1F3AF} Chaos Engineering",
+        "  /chaos — Available scenarios & help",
+        "  /chaos simulate <scenario> [target]",
+        "  /chaos run <scenario> [target]",
+        "  /chaos status — Active chaos run",
+        "  /chaos history — Recent runs",
         "",
         "Or just type in plain English:",
         '  "list all my vms"',
@@ -1174,6 +1186,207 @@ export class InfraWrapBot {
         await ctx.reply(`Failed: ${err instanceof Error ? err.message : String(err)}`);
       }
     });
+
+    // ── /chaos ──
+    this.bot.command("chaos", async (ctx) => {
+      const args = (ctx.match as string || "").trim().split(/\s+/).filter(Boolean);
+      const subcommand = args[0]?.toLowerCase() || "";
+
+      if (!this.chaosEngine) {
+        await ctx.reply("Chaos engine is not available. Start InfraWrap in full or dev mode.");
+        return;
+      }
+
+      try {
+        switch (subcommand) {
+          case "simulate": {
+            const scenarioId = args[1];
+            const target = args[2];
+            if (!scenarioId) {
+              await ctx.reply("Usage: /chaos simulate &lt;scenario&gt; [target]\n\nExample: /chaos simulate vm_kill 104", { parse_mode: "HTML" });
+              return;
+            }
+
+            await ctx.reply("\u{1F52C} Simulating blast radius...");
+            const params = this.buildChaosParams(scenarioId, target);
+            const run = await this.chaosEngine.simulate(scenarioId, params);
+            const lines = this.formatChaosSimulation(run);
+            lines.push("");
+            lines.push(`Run this test? Reply:\n/chaos run ${scenarioId}${target ? " " + target : ""}`);
+            await ctx.reply(lines.join("\n"), { parse_mode: "HTML" });
+            break;
+          }
+
+          case "run": {
+            const scenarioId = args[1];
+            const target = args[2];
+            if (!scenarioId) {
+              await ctx.reply("Usage: /chaos run &lt;scenario&gt; [target]\n\nExample: /chaos run vm_kill 104", { parse_mode: "HTML" });
+              return;
+            }
+
+            // Show blast radius first and ask for approval
+            const params = this.buildChaosParams(scenarioId, target);
+            const simRun = await this.chaosEngine.simulate(scenarioId, params);
+            const blastLines = this.formatChaosSimulation(simRun);
+            blastLines.push("");
+            blastLines.push("\u26A0\uFE0F <b>This will actually stop VM(s). Approve?</b>");
+
+            const keyboard = new InlineKeyboard()
+              .text("\u2705 Approve", `chaos_approve:${scenarioId}:${target || ""}`)
+              .text("\u274C Cancel", "chaos_cancel");
+
+            await ctx.reply(blastLines.join("\n"), {
+              parse_mode: "HTML",
+              reply_markup: keyboard,
+            });
+            break;
+          }
+
+          case "status": {
+            const activeRun = this.chaosEngine.getActiveRun();
+            if (!activeRun) {
+              await ctx.reply("No active chaos run.");
+              return;
+            }
+
+            const elapsed = Math.round(
+              (Date.now() - new Date(activeRun.started_at).getTime()) / 1000,
+            );
+            const lines = [
+              "\u{1F3AF} <b>Active Chaos Run</b>",
+              "",
+              `Scenario: <b>${this.escHtml(activeRun.scenario.name)}</b>`,
+              `Status: <code>${activeRun.status}</code>`,
+              `Elapsed: ${elapsed}s / ${activeRun.simulation.predicted_recovery_time_s}s predicted`,
+              `Affected VMs: ${activeRun.simulation.blast_radius.total_affected}`,
+              `Risk Score: ${activeRun.simulation.risk_score}/100`,
+            ];
+
+            await ctx.reply(lines.join("\n"), { parse_mode: "HTML" });
+            break;
+          }
+
+          case "history": {
+            const history = this.chaosEngine.getHistory().slice(0, 5);
+            if (history.length === 0) {
+              await ctx.reply("No chaos runs recorded yet.");
+              return;
+            }
+
+            const lines = ["\u{1F4CB} <b>Chaos Run History</b>", ""];
+
+            for (const run of history) {
+              const verdict = run.score?.verdict;
+              const verdictIcon =
+                verdict === "pass" ? "\u2705" : verdict === "fail" ? "\u274C" : "\u26A0\uFE0F";
+              const time = run.started_at.slice(11, 19);
+              lines.push(
+                `${verdictIcon} <b>${this.escHtml(run.scenario.name)}</b>`,
+              );
+              lines.push(
+                `   ${time} | Resilience: ${run.score?.resilience_pct ?? "?"}% | ` +
+                  `${run.actual?.recovery_time_s ?? "?"}s / ${run.simulation.predicted_recovery_time_s}s | ` +
+                  `<code>${(run.score?.verdict ?? run.status).toUpperCase()}</code>`,
+              );
+              lines.push("");
+            }
+
+            await ctx.reply(lines.join("\n"), { parse_mode: "HTML" });
+            break;
+          }
+
+          default: {
+            // Show help / available scenarios
+            const scenarios = this.chaosEngine.listScenarios();
+            const lines = [
+              "\u{1F3AF} <b>Chaos Engineering</b>",
+              "",
+              "<b>Available scenarios:</b>",
+            ];
+
+            for (const s of scenarios) {
+              lines.push(`  \u2022 <code>${s.id}</code> \u2014 ${this.escHtml(s.description.split(".")[0])}`);
+            }
+
+            lines.push("");
+            lines.push("<b>Usage:</b>");
+            lines.push("  /chaos simulate vm_kill 104");
+            lines.push("  /chaos run vm_kill 104");
+            lines.push("  /chaos status");
+            lines.push("  /chaos history");
+
+            await ctx.reply(lines.join("\n"), { parse_mode: "HTML" });
+            break;
+          }
+        }
+      } catch (err) {
+        await ctx.reply(`Failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    });
+  }
+
+  // ── Chaos Helpers ──────────────────────────────────────
+
+  /**
+   * Convert a target string (vmid or node name) into the params object
+   * expected by the ChaosEngine API.
+   */
+  private buildChaosParams(
+    scenarioId: string,
+    target?: string,
+  ): Record<string, unknown> | undefined {
+    if (!target) return undefined;
+
+    switch (scenarioId) {
+      case "vm_kill":
+        return { vmid: parseInt(target, 10) };
+      case "node_drain":
+        return { node: target };
+      case "multi_vm_kill":
+        return { count: parseInt(target, 10) || 2 };
+      default:
+        // For random_vm_kill and others, target is optional
+        return target ? { vmid: parseInt(target, 10) } : undefined;
+    }
+  }
+
+  private formatChaosSimulation(run: ChaosRun): string[] {
+    const sim = run.simulation;
+    const br = sim.blast_radius;
+
+    const lines = [
+      "\u{1F4A5} <b>Blast Radius Analysis</b>",
+      "",
+      `Scenario: <b>${this.escHtml(run.scenario.name)}</b>`,
+      `Severity: <code>${run.scenario.severity.toUpperCase()}</code>`,
+      `Risk Score: <b>${sim.risk_score}/100</b>`,
+      `Predicted Recovery: <b>${sim.predicted_recovery_time_s}s</b>`,
+      "",
+    ];
+
+    const affected = br.affected_vms.filter((v) => v.will_be_affected);
+    if (affected.length > 0) {
+      lines.push(`<b>Affected VMs (${affected.length}):</b>`);
+      for (const vm of affected) {
+        const statusIcon = vm.status === "running" ? "\u{1F7E2}" : "\u{1F534}";
+        lines.push(`  ${statusIcon} ${this.escHtml(vm.name)} (${vm.vmid}) on ${this.escHtml(vm.node)}`);
+      }
+    } else {
+      lines.push("No VMs directly affected.");
+    }
+
+    if (br.critical_services_affected > 0) {
+      lines.push("");
+      lines.push(`\u26A0\uFE0F <b>Critical services affected:</b> ${br.critical_services_affected}`);
+    }
+
+    if (sim.recommendation) {
+      lines.push("");
+      lines.push(`\u{1F4AC} ${this.escHtml(sim.recommendation)}`);
+    }
+
+    return lines;
   }
 
   // ── Callback Query Handlers ─────────────────────────────
@@ -1357,6 +1570,56 @@ export class InfraWrapBot {
       await ctx.editMessageText(
         `\u274C ${id} — DENIED`,
       );
+    });
+
+    // ── Chaos approval ──
+    this.bot.callbackQuery(/^chaos_approve:([^:]+):(.*)$/, async (ctx) => {
+      const scenarioId = ctx.match![1];
+      const target = ctx.match![2] || undefined;
+
+      await ctx.answerCallbackQuery({ text: "Executing chaos test..." });
+      await ctx.editMessageText("\u{1F3AF} Chaos test approved. Executing...");
+
+      if (!this.chaosEngine) {
+        await ctx.reply("Chaos engine is not available.");
+        return;
+      }
+
+      const chatId = ctx.chat?.id;
+      if (!chatId) return;
+
+      // Execute in the background so the bot stays responsive
+      const params = this.buildChaosParams(scenarioId, target);
+      this.chaosEngine.execute(scenarioId, params).then(async (run) => {
+        const verdict = run.score?.verdict ?? "unknown";
+        const verdictIcon = verdict === "pass" ? "\u2705" : verdict === "fail" ? "\u274C" : "\u26A0\uFE0F";
+        const lines = [
+          `${verdictIcon} <b>Chaos Test Complete</b>`,
+          "",
+          `Scenario: <b>${this.escHtml(run.scenario.name)}</b>`,
+          `Verdict: <code>${verdict.toUpperCase()}</code>`,
+          `Resilience: <b>${run.score?.resilience_pct ?? "?"}%</b>`,
+          "",
+          `<b>Predicted vs Actual:</b>`,
+          `  Recovery: ${run.simulation.predicted_recovery_time_s}s predicted / ${run.actual?.recovery_time_s ?? "?"}s actual`,
+          `  ${this.escHtml(run.score?.predicted_vs_actual_recovery ?? "")}`,
+          "",
+          `VMs Recovered: ${run.actual?.all_recovered ? "All" : "Partial"}`,
+          `Incidents Created: ${run.actual?.incidents_created.length ?? 0}`,
+        ];
+
+        await this.bot.api.sendMessage(chatId, lines.join("\n"), { parse_mode: "HTML" });
+      }).catch(async (err) => {
+        await this.bot.api.sendMessage(
+          chatId,
+          `\u274C Chaos test failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      });
+    });
+
+    this.bot.callbackQuery("chaos_cancel", async (ctx) => {
+      await ctx.answerCallbackQuery({ text: "Cancelled" });
+      await ctx.editMessageText("Chaos test cancelled.");
     });
   }
 
@@ -1845,6 +2108,51 @@ export class InfraWrapBot {
         await this.bot.api.sendMessage(chatId, text, { parse_mode: "HTML" });
       } catch (err) {
         console.error("[telegram] Failed to send healing_paused notification:", err);
+      }
+    });
+
+    // ── Chaos Engineering Notifications ────────────────────
+
+    this.eventBus.on("chaos_started", async (event: AgentEvent) => {
+      const chatId = this.getChatId();
+      if (!chatId) return;
+      try {
+        const d = event.data as Record<string, unknown>;
+        const scenarioName = (d.scenario_name as string) || "Unknown";
+        const totalAffected = d.total_affected ?? "?";
+        const text = `\u{1F3AF} <b>Chaos test started:</b> ${this.escHtml(scenarioName)}\nAffected VMs: ${totalAffected}`;
+        await this.bot.api.sendMessage(chatId, text, { parse_mode: "HTML" });
+      } catch (err) {
+        console.error("[telegram] Failed to send chaos_started notification:", err);
+      }
+    });
+
+    this.eventBus.on("chaos_completed", async (event: AgentEvent) => {
+      const chatId = this.getChatId();
+      if (!chatId) return;
+      try {
+        const d = event.data as Record<string, unknown>;
+        const verdict = (d.verdict as string) || "unknown";
+        const resiliencePct = d.resilience_pct ?? "?";
+        const verdictLabel = verdict.toUpperCase();
+        const icon = verdict === "pass" ? "\u2705" : verdict === "fail" ? "\u274C" : "\u26A0\uFE0F";
+        const text = `${icon} <b>Chaos test complete!</b> Resilience: ${resiliencePct}% \u2014 <code>${this.escHtml(verdictLabel)}</code>`;
+        await this.bot.api.sendMessage(chatId, text, { parse_mode: "HTML" });
+      } catch (err) {
+        console.error("[telegram] Failed to send chaos_completed notification:", err);
+      }
+    });
+
+    this.eventBus.on("chaos_failed", async (event: AgentEvent) => {
+      const chatId = this.getChatId();
+      if (!chatId) return;
+      try {
+        const d = event.data as Record<string, unknown>;
+        const error = (d.error as string) || "Unknown error";
+        const text = `\u274C <b>Chaos test failed:</b> ${this.escHtml(error)}`;
+        await this.bot.api.sendMessage(chatId, text, { parse_mode: "HTML" });
+      } catch (err) {
+        console.error("[telegram] Failed to send chaos_failed notification:", err);
       }
     });
   }

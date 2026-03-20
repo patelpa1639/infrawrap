@@ -354,7 +354,12 @@ export type AgentEventType =
   | "healing_paused"
   | "playbook_matched"
   | "playbook_executed"
-  | "playbook_cooldown";
+  | "playbook_cooldown"
+  | "chaos_simulated"
+  | "chaos_started"
+  | "chaos_recovery_detected"
+  | "chaos_completed"
+  | "chaos_failed";
 
 export interface AgentEvent {
   type: AgentEventType;

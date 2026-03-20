@@ -14,6 +14,7 @@ import { getDataDir } from "../../config.js";
 import { join } from "node:path";
 import { getHTML } from "./template.js";
 import type { HealingOrchestrator } from "../../healing/orchestrator.js";
+import type { ChaosEngine } from "../../chaos/engine.js";
 import { linearRegression, predictTimeToThreshold } from "../../monitoring/anomaly.js";
 import type { DataPoint as AnomalyDataPoint } from "../../monitoring/anomaly.js";
 
@@ -34,6 +35,7 @@ export class DashboardServer {
   private eventListener: ((event: AgentEvent) => void) | null = null;
   private incidentManager: IncidentManager;
   healer?: HealingOrchestrator;
+  chaosEngine?: ChaosEngine;
 
   constructor(
     private readonly port: number,
@@ -102,7 +104,7 @@ export class DashboardServer {
 
     // CORS headers for local development
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
     if (req.method === "OPTIONS") {
@@ -136,6 +138,31 @@ export class DashboardServer {
           break;
         case "/api/health/predictions":
           this.handlePredictions(res);
+          break;
+        case "/api/chaos/simulate":
+          if (req.method === "POST") {
+            this.handleChaosSimulate(req, res);
+          } else {
+            res.writeHead(405, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Method not allowed" }));
+          }
+          break;
+        case "/api/chaos/execute":
+          if (req.method === "POST") {
+            this.handleChaosExecute(req, res);
+          } else {
+            res.writeHead(405, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Method not allowed" }));
+          }
+          break;
+        case "/api/chaos/status":
+          this.handleChaosStatus(res);
+          break;
+        case "/api/chaos/history":
+          this.handleChaosHistory(res);
+          break;
+        case "/api/chaos/scenarios":
+          this.handleChaosScenarios(res);
           break;
         default:
           // Dynamic route: /api/incidents/:id/timeline
@@ -360,6 +387,104 @@ export class DashboardServer {
     } catch (err) {
       console.error("[DashboardServer] Predictions error:", err);
       this.json(res, { error: "Failed to generate predictions" }, 500);
+    }
+  }
+
+  // ── Chaos Engineering Handlers ──────────────────────
+
+  private async parseBody(req: IncomingMessage): Promise<Record<string, unknown>> {
+    return new Promise((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      req.on('data', (chunk) => chunks.push(chunk));
+      req.on('end', () => {
+        try { resolve(JSON.parse(Buffer.concat(chunks).toString())); }
+        catch { resolve({}); }
+      });
+      req.on('error', reject);
+    });
+  }
+
+  private async handleChaosSimulate(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      if (!this.chaosEngine) {
+        this.json(res, { error: "Chaos engine not available" }, 503);
+        return;
+      }
+      const body = await this.parseBody(req);
+      const scenario = body.scenario as string;
+      const params = (body.params ?? {}) as Record<string, unknown>;
+      if (!scenario) {
+        this.json(res, { error: "Missing required field: scenario" }, 400);
+        return;
+      }
+      const result = await this.chaosEngine.simulate(scenario, params);
+      this.json(res, result);
+    } catch (err) {
+      console.error("[DashboardServer] Chaos simulate error:", err);
+      this.json(res, { error: "Failed to simulate chaos scenario" }, 500);
+    }
+  }
+
+  private async handleChaosExecute(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      if (!this.chaosEngine) {
+        this.json(res, { error: "Chaos engine not available" }, 503);
+        return;
+      }
+      const body = await this.parseBody(req);
+      const scenario = body.scenario as string;
+      const params = (body.params ?? {}) as Record<string, unknown>;
+      if (!scenario) {
+        this.json(res, { error: "Missing required field: scenario" }, 400);
+        return;
+      }
+      const result = await this.chaosEngine.execute(scenario, params);
+      this.json(res, result);
+    } catch (err) {
+      console.error("[DashboardServer] Chaos execute error:", err);
+      this.json(res, { error: "Failed to execute chaos scenario" }, 500);
+    }
+  }
+
+  private handleChaosStatus(res: ServerResponse): void {
+    try {
+      if (!this.chaosEngine) {
+        this.json(res, { error: "Chaos engine not available" }, 503);
+        return;
+      }
+      const activeRun = this.chaosEngine.getActiveRun();
+      this.json(res, activeRun ?? null);
+    } catch (err) {
+      console.error("[DashboardServer] Chaos status error:", err);
+      this.json(res, { error: "Failed to get chaos status" }, 500);
+    }
+  }
+
+  private handleChaosHistory(res: ServerResponse): void {
+    try {
+      if (!this.chaosEngine) {
+        this.json(res, { error: "Chaos engine not available" }, 503);
+        return;
+      }
+      const history = this.chaosEngine.getHistory();
+      this.json(res, history);
+    } catch (err) {
+      console.error("[DashboardServer] Chaos history error:", err);
+      this.json(res, { error: "Failed to get chaos history" }, 500);
+    }
+  }
+
+  private handleChaosScenarios(res: ServerResponse): void {
+    try {
+      if (!this.chaosEngine) {
+        this.json(res, { error: "Chaos engine not available" }, 503);
+        return;
+      }
+      const scenarios = this.chaosEngine.listScenarios();
+      this.json(res, scenarios);
+    } catch (err) {
+      console.error("[DashboardServer] Chaos scenarios error:", err);
+      this.json(res, { error: "Failed to get chaos scenarios" }, 500);
     }
   }
 
