@@ -314,7 +314,8 @@ export class DashboardServer {
         const allLatest = store.getAllLatest(metric);
         for (const { value: currentValue, labels } of allLatest) {
           const rawPoints = store.query(metric, labels, 30);
-          if (rawPoints.length < 2) continue;
+          // Need at least 5 data points (~2.5 minutes) for meaningful regression
+          if (rawPoints.length < 5) continue;
 
           // Convert health.ts DataPoints (numeric ts) to anomaly.ts DataPoints (string ts)
           const anomalyPoints: AnomalyDataPoint[] = rawPoints.map((p) => ({
@@ -331,8 +332,9 @@ export class DashboardServer {
           const projected6h = Math.min(100, Math.max(0, currentValue + slopePerHour * 6));
           const projected24h = Math.min(100, Math.max(0, currentValue + slopePerHour * 24));
 
+          // Don't flag warnings when current usage is low — noise in regression
           let status: string;
-          if (hoursToThreshold === null || hoursToThreshold > 48) {
+          if (currentValue < 50 || hoursToThreshold === null || hoursToThreshold > 48) {
             status = "healthy";
           } else if (hoursToThreshold > 6) {
             status = "warning";
