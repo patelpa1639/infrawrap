@@ -106,6 +106,19 @@ export class MetricStore {
     return this.series.size;
   }
 
+  /** Return the latest value for every series matching a metric name prefix */
+  getAllLatest(metric: string): Array<{ value: number; labels: Record<string, string> }> {
+    const prefix = `${metric}{`;
+    const results: Array<{ value: number; labels: Record<string, string> }> = [];
+    for (const [key, points] of this.series) {
+      if (key.startsWith(prefix) && points.length > 0) {
+        const last = points[points.length - 1];
+        results.push({ value: last.value, labels: last.labels });
+      }
+    }
+    return results;
+  }
+
   private prune(key: string, points: DataPoint[], now: number): void {
     const cutoff = now - RETENTION_MS;
     let i = 0;

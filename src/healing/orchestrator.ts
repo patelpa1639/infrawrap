@@ -107,6 +107,8 @@ export class HealingOrchestrator {
 
   private activeHeals: Map<string, ActiveHeal> = new Map();
   private escalationHistory: Map<string, number[]> = new Map();
+  /** Previous VM status snapshot: vmid -> 1 (running) or 0 (stopped) */
+  private previousVmStatus: Map<string, number> = new Map();
   private circuitBreaker: CircuitBreakerState = {
     consecutiveFailures: 0,
     paused: false,
@@ -134,6 +136,7 @@ export class HealingOrchestrator {
         { metric: "node_disk_pct", labels: {}, lookback_minutes: 60, threshold: 90, horizon_hours: 48 },
         { metric: "node_mem_pct", labels: {}, lookback_minutes: 30, threshold: 90, horizon_hours: 2 },
       ],
+      flatlines: [],
     });
     this.playbookEngine = new PlaybookEngine(options.eventBus);
     this.incidentManager = new IncidentManager(options.eventBus, options.dataDir);
@@ -201,10 +204,14 @@ export class HealingOrchestrator {
     };
 
     try {
-      // Collect metrics (already running via healthMonitor.start)
-      // Detect anomalies against the metric store
+      // Detect metric-based anomalies (threshold, trend, spike)
       const wrappedStore = wrapStoreForDetector(this.healthMonitor.store);
       const anomalies = this.anomalyDetector.detect(wrappedStore);
+
+      // Detect VM state changes (running → stopped = crash)
+      const vmCrashAnomalies = this.detectVmStateChanges();
+      anomalies.push(...vmCrashAnomalies);
+
       summary.anomaliesDetected = anomalies.length;
 
       for (const anomaly of anomalies) {
@@ -474,6 +481,38 @@ export class HealingOrchestrator {
     const now = Date.now();
     const recent = history.filter((t) => now - t < ESCALATION_WINDOW_MS);
     return recent.length >= ESCALATION_THRESHOLD;
+  }
+
+  // ── VM State Change Detection ──────────────────────────────
+
+  private detectVmStateChanges(): Anomaly[] {
+    const anomalies: Anomaly[] = [];
+
+    // Get current status of all VMs from the metric store
+    const allVmStatus = this.healthMonitor.store.getAllLatest("vm_status");
+
+    for (const { value, labels } of allVmStatus) {
+      const vmKey = `${labels.vmid}|${labels.node}|${labels.name || ""}`;
+      const prevValue = this.previousVmStatus.get(vmKey);
+
+      // Was running (1) last tick, now stopped (0) = unexpected stop
+      if (prevValue === 1 && value === 0) {
+        anomalies.push({
+          id: randomUUID(),
+          type: "threshold",
+          severity: "critical",
+          metric: "vm_status",
+          labels,
+          current_value: 0,
+          message: `VM ${labels.name || labels.vmid} on ${labels.node} stopped unexpectedly`,
+          detected_at: new Date().toISOString(),
+        });
+      }
+
+      this.previousVmStatus.set(vmKey, value);
+    }
+
+    return anomalies;
   }
 
   // ── Helpers ─────────────────────────────────────────────────
