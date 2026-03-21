@@ -1,5 +1,6 @@
 import type { ToolRegistry } from "../tools/registry.js";
 import type { EventBus } from "../agent/events.js";
+import { metricStore } from "./metric-store.js";
 // ── Exported Types ──────────────────────────────────────────
 
 export interface DataPoint {
@@ -398,6 +399,12 @@ export class HealthMonitor {
   ): void {
     this.store.record(name, value, labels);
     batch.push({ name, value, labels, timestamp: Date.now() });
+
+    // Persist per-node resource metrics to SQLite for historical charting
+    const persistMetrics = ["node_cpu_pct", "node_mem_pct", "node_disk_pct"];
+    if (persistMetrics.includes(name) && labels.node) {
+      metricStore.record(labels.node, name, value);
+    }
   }
 
   private finalizeSummary(summary: ClusterHealthSummary): void {

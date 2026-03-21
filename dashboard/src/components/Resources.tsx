@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useStore } from "../store";
 import { fetchPredictions, fetchRightsizing } from "../api/client";
 import type { Prediction, RightsizingRec } from "../types";
+import MetricChart from "./MetricChart";
 
 function formatMetric(metric: string): string {
   return metric
@@ -337,6 +338,35 @@ export default function Resources() {
           </div>
         </div>
       </div>
+
+      {/* Section 4: Metric History Charts */}
+      {nodes.length > 0 && (
+        <div className="card">
+          <div className="card-head">
+            <h3>Metric History</h3>
+            <span className="card-badge">{nodes.length} nodes</span>
+          </div>
+          <div className="card-body">
+            {nodes.map((n) => (
+              <div key={n.name} className="metric-history-node">
+                <h4 className="metric-history-node-title">{n.name}</h4>
+                <div className="metric-history-grid">
+                  <MetricChart
+                    node={n.name}
+                    metric="node_cpu_pct"
+                    label="CPU History"
+                  />
+                  <MetricChart
+                    node={n.name}
+                    metric="node_mem_pct"
+                    label="RAM History"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </>
   );
 }

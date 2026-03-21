@@ -40,6 +40,12 @@ export const fetchPredictions = () =>
 export const fetchRightsizing = () =>
   request<{ recommendations: import("../types").RightsizingRec[] }>("/api/health/rightsizing");
 
+// Metric history
+export const fetchMetricHistory = (node: string, metric: string, range: string) =>
+  request<{ points: { timestamp: number; value: number }[] }>(
+    `/api/metrics/history?node=${encodeURIComponent(node)}&metric=${encodeURIComponent(metric)}&range=${encodeURIComponent(range)}`,
+  );
+
 // Chaos
 export const fetchChaosScenarios = () =>
   request<import("../types").ChaosScenario[]>("/api/chaos/scenarios");
