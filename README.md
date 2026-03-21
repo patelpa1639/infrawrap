@@ -302,7 +302,7 @@ Actions are classified from their tool definition, then **elevated** based on pa
 | Audit Storage | SQLite via better-sqlite3 |
 | Schema Validation | Zod |
 | MCP Integration | Model Context Protocol SDK |
-| Dashboard | Zero-dependency — pure HTML/CSS/JS served from Node.js `http` |
+| Dashboard | React 19 + Vite 6 + Zustand (SSE real-time) |
 
 ---
 
@@ -353,8 +353,16 @@ infrawrap/
 │       ├── telegram.ts       # Telegram bot with inline approval buttons
 │       ├── mcp.ts            # MCP server for Claude Code integration
 │       └── dashboard/
-│           ├── server.ts     # HTTP + SSE server with REST API
-│           └── template.ts   # Single-page HTML template
+│           └── server.ts     # HTTP + SSE server with REST API
+├── dashboard/                   # React 19 frontend (Vite + Zustand)
+│   ├── src/
+│   │   ├── App.tsx              # Main app shell with tab navigation
+│   │   ├── components/          # 10 React components (Topology, Resources, etc.)
+│   │   ├── hooks/               # SSE, polling, and formatter hooks
+│   │   ├── store/               # Zustand global state
+│   │   ├── api/                 # REST API client
+│   │   └── styles/              # CSS (design tokens, dark theme)
+│   └── vite.config.ts           # Vite config with dev proxy
 ├── policies/
 │   └── default.yaml          # Default governance policy
 ├── docs/

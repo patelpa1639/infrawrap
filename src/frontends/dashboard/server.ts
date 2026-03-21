@@ -14,6 +14,8 @@ import { IncidentManager } from "../../healing/incidents.js";
 import { getDataDir } from "../../config.js";
 import { join } from "node:path";
 import { getHTML } from "./template.js";
+import { readFileSync, existsSync } from "node:fs";
+import { extname } from "node:path";
 import type { HealingOrchestrator } from "../../healing/orchestrator.js";
 import type { ChaosEngine } from "../../chaos/engine.js";
 import { linearRegression, predictTimeToThreshold } from "../../monitoring/anomaly.js";
@@ -184,6 +186,11 @@ export class DashboardServer {
           if (path.startsWith("/api/incidents/") && path.endsWith("/timeline")) {
             const incidentId = path.replace("/api/incidents/", "").replace("/timeline", "");
             this.handleIncidentTimeline(res, incidentId);
+          } else if (this.useReact && path.startsWith("/assets/")) {
+            this.serveStaticFile(res, path);
+          } else if (this.useReact && !path.startsWith("/api/")) {
+            // SPA fallback — serve index.html for client-side routing
+            this.serveHTML(res);
           } else {
             res.writeHead(404, { "Content-Type": "application/json" });
             res.end(JSON.stringify({ error: "Not found" }));
@@ -198,13 +205,52 @@ export class DashboardServer {
 
   // ── Route Handlers ──────────────────────────────────────
 
+  private reactDistDir = join(import.meta.dirname || __dirname, "../../../dashboard/dist");
+  private useReact = existsSync(join(this.reactDistDir, "index.html"));
+
   private serveHTML(res: ServerResponse): void {
+    if (this.useReact) {
+      try {
+        const html = readFileSync(join(this.reactDistDir, "index.html"), "utf-8");
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" });
+        res.end(html);
+        return;
+      } catch { /* fall through to template */ }
+    }
     const html = getHTML();
-    res.writeHead(200, {
-      "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "no-cache",
-    });
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-cache" });
     res.end(html);
+  }
+
+  private serveStaticFile(res: ServerResponse, filePath: string): void {
+    const MIME: Record<string, string> = {
+      ".js": "application/javascript",
+      ".css": "text/css",
+      ".html": "text/html",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".jpg": "image/jpeg",
+      ".woff2": "font/woff2",
+      ".woff": "font/woff",
+      ".json": "application/json",
+    };
+    const ext = extname(filePath);
+    const contentType = MIME[ext] || "application/octet-stream";
+    try {
+      const fullPath = join(this.reactDistDir, filePath);
+      if (!existsSync(fullPath)) {
+        res.writeHead(404); res.end("Not found");
+        return;
+      }
+      const data = readFileSync(fullPath);
+      res.writeHead(200, {
+        "Content-Type": contentType,
+        "Cache-Control": ext === ".html" ? "no-cache" : "public, max-age=31536000, immutable",
+      });
+      res.end(data);
+    } catch {
+      res.writeHead(404); res.end("Not found");
+    }
   }
 
   private async handleCluster(res: ServerResponse): Promise<void> {
