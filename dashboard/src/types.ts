@@ -229,4 +229,12 @@ export interface AuditEntry {
   approval?: string;
 }
 
+export interface Toast {
+  id: string;
+  type: "error" | "warning" | "success" | "info";
+  title: string;
+  message: string;
+  timestamp: string;
+}
+
 export type TabId = "topology" | "plan" | "resources" | "nodes" | "incidents" | "governance" | "chaos";

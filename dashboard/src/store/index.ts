@@ -9,6 +9,7 @@ import type {
   HealingBanner,
   HealthSummary,
   TabId,
+  Toast,
 } from "../types";
 
 interface DashboardState {
@@ -69,6 +70,11 @@ interface DashboardState {
   // Metric history (sparklines)
   metricHistory: { cpu: number[]; ram: number[] };
   nodeMetricHistory: Record<string, { cpu: number[]; ram: number[] }>;
+
+  // Toasts
+  toasts: Toast[];
+  addToast: (toast: Omit<Toast, "id" | "timestamp">) => void;
+  removeToast: (id: string) => void;
 
   // Governance counters
   totalActions: number;
@@ -199,6 +205,16 @@ export const useStore = create<DashboardState>((set) => ({
 
   metricHistory: { cpu: [], ram: [] },
   nodeMetricHistory: {},
+
+  toasts: [],
+  addToast: (toast) => {
+    const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    set((s) => ({
+      toasts: [{ ...toast, id, timestamp: new Date().toISOString() }, ...s.toasts].slice(0, 20),
+    }));
+  },
+  removeToast: (id) =>
+    set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 
   totalActions: 0,
   failures: 0,

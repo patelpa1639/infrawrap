@@ -11,6 +11,7 @@ import Incidents from "./components/Incidents";
 import Governance from "./components/Governance";
 import Chaos from "./components/Chaos";
 import CommandPalette from "./components/CommandPalette";
+import ToastContainer from "./components/Toast";
 import type { TabId } from "./types";
 
 const TABS: { id: TabId; label: string; icon?: string }[] = [
@@ -73,6 +74,7 @@ export function App() {
       </div>
 
       <CommandPalette />
+      <ToastContainer />
     </>
   );
 }

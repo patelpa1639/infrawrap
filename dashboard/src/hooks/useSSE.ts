@@ -84,6 +84,11 @@ export function useSSE() {
             output: d.result,
           });
           s.incrementCompleted();
+          s.addToast({
+            type: "success",
+            title: "Task Completed",
+            message: (d.description as string) || `Step ${d.step_id} completed`,
+          });
           break;
 
         case "step_failed":
@@ -94,10 +99,20 @@ export function useSSE() {
           });
           s.incrementFailed();
           s.incrementFailures();
+          s.addToast({
+            type: "error",
+            title: "Step Failed",
+            message: (d.error as string) || `Step ${d.step_id} failed`,
+          });
           break;
 
         case "incident_opened":
           s.addActiveIncident(d as unknown as import("../types").Incident);
+          s.addToast({
+            type: "error",
+            title: "Incident Detected",
+            message: (d.description as string) || `${d.severity} incident opened`,
+          });
           break;
 
         case "incident_action":
@@ -120,6 +135,11 @@ export function useSSE() {
             status: "failed",
             resolved_at: d.resolved_at as string,
           });
+          s.addToast({
+            type: "error",
+            title: "Incident Failed",
+            message: (d.description as string) || "Incident resolution failed",
+          });
           break;
 
         case "incident_rca":
@@ -135,10 +155,20 @@ export function useSSE() {
 
         case "healing_completed":
           s.removeHealingBanner(d.incident_id as string);
+          s.addToast({
+            type: "success",
+            title: "Healing Complete",
+            message: (d.message as string) || "Auto-healing finished successfully",
+          });
           break;
 
         case "healing_failed":
           s.removeHealingBanner(d.incident_id as string);
+          s.addToast({
+            type: "warning",
+            title: "Healing Failed",
+            message: (d.message as string) || "Auto-healing could not resolve the issue",
+          });
           break;
 
         case "healing_paused":
@@ -154,6 +184,44 @@ export function useSSE() {
             type: "escalated",
             message: d.message as string || "Incident escalated to operator",
             id: d.incident_id as string || "escalated",
+          });
+          s.addToast({
+            type: "warning",
+            title: "Incident Escalated",
+            message: (d.message as string) || "Incident escalated to operator",
+          });
+          break;
+
+        case "chaos_simulated":
+        case "chaos_started":
+          s.addToast({
+            type: "info",
+            title: "Chaos Experiment",
+            message: (d.name as string) || (d.scenario_name as string) || "Chaos experiment in progress",
+          });
+          break;
+
+        case "chaos_completed":
+          s.addToast({
+            type: "success",
+            title: "Chaos Completed",
+            message: (d.verdict as string) ? `Verdict: ${d.verdict}` : "Chaos experiment finished",
+          });
+          break;
+
+        case "chaos_failed":
+          s.addToast({
+            type: "warning",
+            title: "Chaos Failed",
+            message: (d.error as string) || "Chaos experiment failed",
+          });
+          break;
+
+        case "circuit_breaker_tripped":
+          s.addToast({
+            type: "warning",
+            title: "Circuit Breaker Tripped",
+            message: (d.message as string) || "Risk threshold exceeded",
           });
           break;
 
