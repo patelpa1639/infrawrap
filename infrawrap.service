@@ -4,11 +4,11 @@ After=network.target
 
 [Service]
 Type=simple
-User=pranav
-WorkingDirectory=/home/pranav/infrawrap
-Environment=PATH=/home/pranav/.nvm/versions/node/v22.22.1/bin:/usr/bin:/bin
-EnvironmentFile=/home/pranav/infrawrap/.env
-ExecStart=/home/pranav/.nvm/versions/node/v22.22.1/bin/npx tsx src/index.ts full
+User=YOUR_USER
+WorkingDirectory=/path/to/infrawrap
+Environment=PATH=/path/to/node/bin:/usr/bin:/bin
+EnvironmentFile=/path/to/infrawrap/.env
+ExecStart=/path/to/node/bin/npx tsx src/index.ts full
 Restart=on-failure
 RestartSec=5
 
