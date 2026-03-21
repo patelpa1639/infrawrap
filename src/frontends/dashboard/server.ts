@@ -20,6 +20,7 @@ import type { HealingOrchestrator } from "../../healing/orchestrator.js";
 import type { ChaosEngine } from "../../chaos/engine.js";
 import { linearRegression, predictTimeToThreshold } from "../../monitoring/anomaly.js";
 import type { DataPoint as AnomalyDataPoint } from "../../monitoring/anomaly.js";
+import { metricStore } from "../../monitoring/metric-store.js";
 
 // ── SSE Client Tracking ────────────────────────────────────
 
@@ -172,6 +173,9 @@ export class DashboardServer {
           break;
         case "/api/health/rightsizing":
           this.handleRightsizing(res);
+          break;
+        case "/api/metrics/history":
+          this.handleMetricsHistory(res, url);
           break;
         case "/api/agent/command":
           if (req.method === "POST") {
@@ -551,6 +555,53 @@ export class DashboardServer {
     } catch (err) {
       console.error("[DashboardServer] Rightsizing error:", err);
       this.json(res, { error: "Failed to generate rightsizing recommendations" }, 500);
+    }
+  }
+
+  // ── Metric History Handler ──────────────────────────
+
+  private handleMetricsHistory(res: ServerResponse, url: URL): void {
+    try {
+      const node = url.searchParams.get("node");
+      const metric = url.searchParams.get("metric");
+      const range = url.searchParams.get("range") ?? "1h";
+
+      if (!node || !metric) {
+        this.json(res, { error: "Missing required params: node, metric" }, 400);
+        return;
+      }
+
+      const rangeMap: Record<string, number> = {
+        "1h": 60 * 60 * 1000,
+        "6h": 6 * 60 * 60 * 1000,
+        "24h": 24 * 60 * 60 * 1000,
+        "7d": 7 * 24 * 60 * 60 * 1000,
+      };
+
+      const timeRangeMs = rangeMap[range] ?? rangeMap["1h"];
+      const rawPoints = metricStore.query(node, metric, timeRangeMs);
+
+      // Downsample to ~100 points using averaging
+      const MAX_POINTS = 100;
+      let points = rawPoints;
+      if (rawPoints.length > MAX_POINTS) {
+        const bucketSize = Math.ceil(rawPoints.length / MAX_POINTS);
+        points = [];
+        for (let i = 0; i < rawPoints.length; i += bucketSize) {
+          const bucket = rawPoints.slice(i, i + bucketSize);
+          const avgTs = Math.round(
+            bucket.reduce((s, p) => s + p.timestamp, 0) / bucket.length,
+          );
+          const avgVal =
+            bucket.reduce((s, p) => s + p.value, 0) / bucket.length;
+          points.push({ timestamp: avgTs, value: Math.round(avgVal * 100) / 100 });
+        }
+      }
+
+      this.json(res, { points });
+    } catch (err) {
+      console.error("[DashboardServer] Metrics history error:", err);
+      this.json(res, { error: "Failed to fetch metric history" }, 500);
     }
   }
 

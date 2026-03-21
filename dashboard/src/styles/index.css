@@ -2126,6 +2126,138 @@ tbody tr:last-child td {
   font-variant-numeric: tabular-nums;
 }
 
+/* ── Metric History Charts ─────────────────────────── */
+
+.metric-history-node {
+  margin-bottom: 20px;
+}
+
+.metric-history-node:last-child {
+  margin-bottom: 0;
+}
+
+.metric-history-node-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.metric-history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.metric-chart {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+
+.metric-chart:hover {
+  border-color: var(--border-focus);
+}
+
+.metric-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 6px;
+}
+
+.metric-chart-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.metric-chart-ranges {
+  display: flex;
+  gap: 2px;
+}
+
+.metric-range-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  font-size: 0.64rem;
+  font-family: var(--font-mono);
+  padding: 2px 7px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.metric-range-btn:hover {
+  color: var(--text-secondary);
+  border-color: var(--border-focus);
+}
+
+.metric-range-btn.active {
+  background: var(--teal-muted);
+  border-color: var(--teal-border);
+  color: var(--teal);
+}
+
+.metric-chart-body {
+  position: relative;
+  padding: 0 8px 8px;
+}
+
+.metric-chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.metric-chart-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  color: var(--text-tertiary);
+  font-size: 0.78rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.metric-chart-tooltip {
+  position: absolute;
+  transform: translateX(-50%) translateY(-100%);
+  background: var(--bg-card);
+  border: 1px solid var(--border-focus);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  white-space: nowrap;
+}
+
+.metric-tooltip-value {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--teal);
+  font-family: var(--font-mono);
+}
+
+.metric-tooltip-time {
+  font-size: 0.64rem;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
 /* Sparklines section */
 .sparklines-section {
   display: grid;
