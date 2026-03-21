@@ -105,6 +105,13 @@ When working on a task:
 4. Run the narrowest useful verification command.
 5. Summarize what changed, what was verified, and any remaining risks.
 
+## Commit Messages
+
+Always append a co-author trailer to commit messages so GitHub shows proper attribution:
+
+- **Codex**: `Co-Authored-By: OpenAI Codex <noreply@openai.com>`
+- **Claude**: `Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>`
+
 ## Good Defaults For Codex And Claude
 
 - Be explicit about assumptions.
