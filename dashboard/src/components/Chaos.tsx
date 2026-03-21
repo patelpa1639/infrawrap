@@ -99,11 +99,19 @@ export default function Chaos() {
     const ts = new Date(latest.timestamp).toLocaleTimeString();
 
     switch (latest.type) {
-      case "chaos_started":
-        setActiveRun(latest.data as unknown as ChaosRun);
+      case "chaos_started": {
+        const sd = latest.data as Record<string, unknown>;
+        setActiveRun((prev) => ({
+          ...(prev || {} as ChaosRun),
+          id: (sd.run_id as string) || prev?.id || "",
+          status: "executing" as const,
+          scenario: prev?.scenario || { id: sd.scenario_id as string, name: sd.scenario_id as string } as ChaosRun["scenario"],
+          started_at: new Date().toISOString(),
+        }) as ChaosRun);
         setExecStartTime(Date.now());
         setLogEntries((prev) => [...prev, { time: ts, msg: "Chaos scenario started" }]);
         break;
+      }
 
       case "chaos_recovery_detected":
         setActiveRun((prev) =>
@@ -116,23 +124,24 @@ export default function Chaos() {
         break;
 
       case "chaos_completed": {
-        const run = latest.data as unknown as ChaosRun;
-        setActiveRun(run);
+        const d = latest.data as Record<string, unknown>;
+        setActiveRun((prev) => prev ? { ...prev, status: "completed" as const, verdict: ((d.verdict as string) || "unknown") as ChaosRun["verdict"], resilience_score: (d.resilience_pct as number) ?? prev.resilience_score, actual_recovery_time_s: (d.actual_recovery_s as number) ?? prev.actual_recovery_time_s } : prev);
         if (timerRef.current) {
           clearInterval(timerRef.current);
           timerRef.current = null;
         }
         setLogEntries((prev) => [
           ...prev,
-          { time: ts, msg: `Chaos run completed — verdict: ${run.verdict || "unknown"}` },
+          { time: ts, msg: `Chaos run completed — verdict: ${(d.verdict as string) || "unknown"}` },
         ]);
-        setHistory((prev) => [run, ...prev]);
+        // Refresh history from API instead of pushing incomplete SSE data
+        fetchChaosHistory().then(setHistory).catch(() => {});
         break;
       }
 
       case "chaos_failed": {
-        const failedRun = latest.data as unknown as ChaosRun;
-        setActiveRun((prev) => prev ? { ...prev, ...failedRun, status: "failed" } : prev);
+        const d = latest.data as Record<string, unknown>;
+        setActiveRun((prev) => prev ? { ...prev, status: "failed", error: (d.error as string) } : prev);
         if (timerRef.current) {
           clearInterval(timerRef.current);
           timerRef.current = null;
@@ -156,9 +165,9 @@ export default function Chaos() {
   const handleSimulate = async () => {
     if (!selectedScenario) return;
     try {
-      const sim = await simulateChaos(selectedScenario, {
-        target_vm: selectedTarget || undefined,
-      });
+      const params: Record<string, unknown> = {};
+      if (selectedTarget) params.vmid = Number(selectedTarget);
+      const sim = await simulateChaos(selectedScenario, params);
       setSimulation(sim);
     } catch {
       // handled silently
@@ -172,9 +181,9 @@ export default function Chaos() {
     );
     if (!ok) return;
     try {
-      const run = await executeChaos(selectedScenario, {
-        target_vm: selectedTarget || undefined,
-      });
+      const params: Record<string, unknown> = {};
+      if (selectedTarget) params.vmid = Number(selectedTarget);
+      const run = await executeChaos(selectedScenario, params);
       setActiveRun(run);
       setExecStartTime(Date.now());
       setLogEntries([{ time: new Date().toLocaleTimeString(), msg: "Execution initiated" }]);
@@ -358,7 +367,7 @@ export default function Chaos() {
         ) : (
           history.map((run) => (
             <div key={run.id} className="chaos-history-item">
-              <span>{run.scenario.name}</span>
+              <span>{run.scenario?.name || (run as unknown as Record<string, unknown>).scenario_id as string || "Unknown"}</span>
               <span className={`chaos-verdict-value ${run.verdict || ""}`}>
                 {run.verdict?.toUpperCase() || run.status}
               </span>
