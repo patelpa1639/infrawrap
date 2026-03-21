@@ -14,11 +14,14 @@
   <img src="https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Node.js_22+-339933?logo=node.js&logoColor=white" alt="Node.js" />
   <img src="https://img.shields.io/badge/Anthropic_Claude-191919?logo=anthropic&logoColor=white" alt="Anthropic Claude" />
+  <img src="https://img.shields.io/badge/OpenAI_Codex-0A0A0A?logo=openai&logoColor=white" alt="OpenAI Codex" />
   <img src="https://img.shields.io/badge/Proxmox_VE-E57000?logo=proxmox&logoColor=white" alt="Proxmox" />
   <img src="https://img.shields.io/badge/License-MIT-blue" alt="MIT License" />
 </p>
 
 <br/>
+
+<p align="center"><em>Built with help from Claude and Codex.</em></p>
 
 ## Why InfraWrap?
 
