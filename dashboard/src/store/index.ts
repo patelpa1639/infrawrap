@@ -66,6 +66,10 @@ interface DashboardState {
   lastHealth: HealthSummary | null;
   addHealth: (h: HealthSummary) => void;
 
+  // Metric history (sparklines)
+  metricHistory: { cpu: number[]; ram: number[] };
+  nodeMetricHistory: Record<string, { cpu: number[]; ram: number[] }>;
+
   // Governance counters
   totalActions: number;
   failures: number;
@@ -85,7 +89,33 @@ export const useStore = create<DashboardState>((set) => ({
   setActiveTab: (t) => set({ activeTab: t }),
 
   cluster: null,
-  setCluster: (c) => set({ cluster: c }),
+  setCluster: (c) =>
+    set((s) => {
+      const nodeHist = { ...s.nodeMetricHistory };
+      if (c?.nodes) {
+        for (const node of c.nodes) {
+          const cpuPct = node.cpu_usage_pct || node.cpu_pct || 0;
+          const ramPct = node.ram_total_mb ? (node.ram_used_mb / node.ram_total_mb) * 100 : 0;
+          const prev = nodeHist[node.id] || { cpu: [], ram: [] };
+          nodeHist[node.id] = {
+            cpu: [...prev.cpu, cpuPct].slice(-20),
+            ram: [...prev.ram, ramPct].slice(-20),
+          };
+        }
+      }
+      // Also update aggregate if no health data has provided it yet
+      let { cpu, ram } = s.metricHistory;
+      if (c?.nodes?.length) {
+        const firstNode = c.nodes[0];
+        const avgCpu = firstNode.cpu_usage_pct || firstNode.cpu_pct || 0;
+        const avgRam = firstNode.ram_total_mb ? (firstNode.ram_used_mb / firstNode.ram_total_mb) * 100 : 0;
+        if (s.metricHistory.cpu.length === 0 || !s.lastHealth) {
+          cpu = [...cpu, avgCpu].slice(-20);
+          ram = [...ram, avgRam].slice(-20);
+        }
+      }
+      return { cluster: c, nodeMetricHistory: nodeHist, metricHistory: { cpu, ram } };
+    }),
 
   plan: null,
   planSteps: {},
@@ -154,10 +184,21 @@ export const useStore = create<DashboardState>((set) => ({
   healthHistory: [],
   lastHealth: null,
   addHealth: (h) =>
-    set((s) => ({
-      lastHealth: h,
-      healthHistory: [...s.healthHistory, h].slice(-30),
-    })),
+    set((s) => {
+      const cpuVal = h.resources?.cpu_usage_pct;
+      const ramVal = h.resources?.ram_usage_pct;
+      return {
+        lastHealth: h,
+        healthHistory: [...s.healthHistory, h].slice(-30),
+        metricHistory: {
+          cpu: cpuVal != null ? [...s.metricHistory.cpu, cpuVal].slice(-20) : s.metricHistory.cpu,
+          ram: ramVal != null ? [...s.metricHistory.ram, ramVal].slice(-20) : s.metricHistory.ram,
+        },
+      };
+    }),
+
+  metricHistory: { cpu: [], ram: [] },
+  nodeMetricHistory: {},
 
   totalActions: 0,
   failures: 0,

@@ -1,4 +1,5 @@
 import { useStore } from "../store";
+import { Sparkline, metricColor } from "./Sparkline";
 
 export function Header() {
   const connected = useStore((s) => s.connected);
@@ -14,6 +15,7 @@ export function Header() {
     lastHealth?.vms?.running ??
     cluster?.vms?.filter((v) => v.status === "running")?.length ??
     0;
+  const metricHistory = useStore((s) => s.metricHistory);
   const firstNode = cluster?.nodes?.[0];
   const avgCpu = lastHealth?.resources?.cpu_usage_pct ?? firstNode?.cpu_usage_pct ?? 0;
   const avgRam = lastHealth?.resources?.ram_usage_pct ??
@@ -76,11 +78,17 @@ export function Header() {
         </div>
         <div className="stat-cell">
           <span className="stat-label">AVG CPU</span>
-          <span className="stat-value">{avgCpu.toFixed(1)}%</span>
+          <span className="stat-value stat-value-with-spark">
+            {avgCpu.toFixed(1)}%
+            <Sparkline data={metricHistory.cpu} color={metricColor(avgCpu)} />
+          </span>
         </div>
         <div className="stat-cell">
           <span className="stat-label">AVG RAM</span>
-          <span className="stat-value">{avgRam.toFixed(1)}%</span>
+          <span className="stat-value stat-value-with-spark">
+            {avgRam.toFixed(1)}%
+            <Sparkline data={metricHistory.ram} color={metricColor(avgRam)} />
+          </span>
         </div>
       </div>
     </>

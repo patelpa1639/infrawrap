@@ -1,8 +1,10 @@
 import { useStore } from "../store";
 import { formatUptime } from "../hooks/useFormatters";
+import { Sparkline, metricColor } from "./Sparkline";
 
 export default function Nodes() {
   const cluster = useStore((s) => s.cluster);
+  const nodeMetricHistory = useStore((s) => s.nodeMetricHistory);
 
   if (!cluster || !cluster.nodes.length) {
     return <div className="empty-state">No nodes found</div>;
@@ -24,8 +26,14 @@ export default function Nodes() {
               />
               {node.name}
             </div>
-            <div className="node-stat">CPU: {node.cpu_cores} cores / {cpuPct.toFixed(1)}%</div>
-            <div className="node-stat">RAM: {ramPct.toFixed(1)}% / {ramTotalGb.toFixed(1)} GB</div>
+            <div className="node-stat">
+              <span>CPU: {node.cpu_cores} cores / {cpuPct.toFixed(1)}%</span>
+              <Sparkline data={nodeMetricHistory[node.id]?.cpu ?? []} color={metricColor(cpuPct)} width={64} height={20} />
+            </div>
+            <div className="node-stat">
+              <span>RAM: {ramPct.toFixed(1)}% / {ramTotalGb.toFixed(1)} GB</span>
+              <Sparkline data={nodeMetricHistory[node.id]?.ram ?? []} color={metricColor(ramPct)} width={64} height={20} />
+            </div>
             <div className="node-stat">Uptime: {formatUptime(node.uptime_s)}</div>
           </div>
         );
