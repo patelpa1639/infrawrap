@@ -76,6 +76,17 @@ Important env vars live in `.env.example`:
 
 The backend supports both `anthropic` and `openai` providers via `src/agent/llm.ts`.
 
+## Dashboard Architecture
+
+The dashboard frontend (`dashboard/`) is a React 19 + Vite 6 app using Zustand for state management. Key patterns:
+
+- **SSE (Server-Sent Events)** for real-time updates. The backend pushes events (`health_check`, `incident`, `healing`, `chaos`, `task`, `governance`) and the frontend consumes them via `EventSource` in `src/store.ts`.
+- **Zustand store** (`src/store.ts`) is the single source of truth. Components subscribe to slices of state, not props.
+- **Cluster API fallback**: when SSE health events aren't flowing, components fall back to cluster API data (e.g. `useStore(s => s.cluster)`) so the UI still populates.
+- **CSS lives in `src/styles/index.css`** with CSS custom properties for theming (`--bg`, `--teal`, `--red`, `--amber`, etc.).
+- Components: `Header`, `Topology`, `Resources`, `Nodes`, `Incidents`, `Governance`, `Chaos`, `EventStream`, `CommandPalette`.
+- The gauge SVG pattern uses a `div.gauge-svg > svg` wrapper structure. Do not render `<svg className="gauge-svg">` directly as the CSS expects the div wrapper.
+
 ## Repo-Specific Notes
 
 - The backend dashboard server serves `dashboard/dist` if it exists; otherwise it falls back to an inline HTML template.
