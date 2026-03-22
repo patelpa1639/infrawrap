@@ -208,7 +208,15 @@ export default function Governance() {
               ).length;
               const overallResult =
                 failCount > 0 ? "failed" : successCount === group.entries.length ? "success" : "warn";
-              const goalText = planId || "Direct action";
+              // Derive a readable label from first entry's action/reasoning
+              const firstEntry = group.entries[0]?.entry;
+              const actions = [...new Set(group.entries.map(({ entry }) => entry.action))];
+              const actionLabel = actions.map((a) => a.replace(/_/g, " ")).join(" → ");
+              const goalText = firstEntry?.reasoning
+                ? firstEntry.reasoning.length > 80
+                  ? firstEntry.reasoning.slice(0, 80) + "…"
+                  : firstEntry.reasoning
+                : actionLabel || "Direct action";
 
               return (
                 <div
