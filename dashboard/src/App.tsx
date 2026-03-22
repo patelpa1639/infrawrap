@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useSSE } from "./hooks/useSSE";
 import { useClusterPolling, useIncidentPolling } from "./hooks/usePolling";
 import { useStore } from "./store";
@@ -32,6 +33,7 @@ export function App() {
   const activeTab = useStore((s) => s.activeTab);
   const setActiveTab = useStore((s) => s.setActiveTab);
   const activeIncidents = useStore((s) => s.activeIncidents);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <>
@@ -68,10 +70,34 @@ export function App() {
           </div>
         </div>
 
-        <div className="col-right">
+        <div className={`col-right${sidebarOpen ? " mobile-open" : ""}`}>
+          <button
+            className="sidebar-close-btn"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close event stream"
+          >
+            &times;
+          </button>
           <EventStream />
         </div>
+        {sidebarOpen && (
+          <div
+            className="sidebar-overlay"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
       </div>
+
+      {/* Floating button to open EventStream sidebar on mobile */}
+      <button
+        className="sidebar-fab"
+        onClick={() => setSidebarOpen(true)}
+        aria-label="Open event stream"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+      </button>
 
       <CommandPalette />
       <ToastContainer />

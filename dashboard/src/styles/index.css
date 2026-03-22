@@ -3333,3 +3333,543 @@ tbody tr:last-child td {
 .toast--warning .toast__progress { background: var(--amber); }
 .toast--success .toast__progress { background: var(--teal); }
 .toast--info    .toast__progress { background: var(--blue); }
+
+/* ── Sidebar mobile toggle elements ─────────────────── */
+.sidebar-close-btn {
+  display: none;
+}
+
+.sidebar-overlay {
+  display: none;
+}
+
+.sidebar-fab {
+  display: none;
+}
+
+/* ── Touch optimization ─────────────────────────────── */
+button, select, a, .tab, .incident-card, .incident-row, .audit-header, .audit-plan-header {
+  touch-action: manipulation;
+}
+
+/* ══════════════════════════════════════════════════════
+   TABLET BREAKPOINT: 768px - 1024px
+   ══════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  /* Layout: hide sidebar, single column */
+  .main {
+    grid-template-columns: 1fr;
+  }
+
+  .col-left {
+    border-right: none;
+  }
+
+  .col-right {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 380px;
+    height: 100vh;
+    z-index: 200;
+    background: var(--bg-primary);
+    border-left: 1px solid var(--border);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+  }
+
+  .col-right.mobile-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    font-size: 1.3rem;
+    cursor: pointer;
+    z-index: 210;
+  }
+
+  .sidebar-close-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 190;
+    background: rgba(5, 8, 18, 0.5);
+    backdrop-filter: blur(4px);
+  }
+
+  .sidebar-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--teal);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    z-index: 100;
+    box-shadow: 0 4px 16px rgba(10, 205, 170, 0.3);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .sidebar-fab:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 24px rgba(10, 205, 170, 0.4);
+  }
+
+  .sidebar-fab:active {
+    transform: scale(0.95);
+  }
+
+  /* Stat row: adapt for tablet */
+  .stat-row {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  .stat-cell {
+    padding: 12px 16px;
+  }
+
+  /* Header: shrink trigger text */
+  .cmd-k-trigger {
+    padding: 4px 8px;
+    font-size: 0.71rem;
+  }
+
+  /* Governance grid: 2 columns on tablet */
+  .gov-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Chaos controls wrap better */
+  .chaos-controls {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  /* Resource gauges: 2 columns on tablet */
+  .resource-gauges {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   MOBILE BREAKPOINT: < 768px
+   ══════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* ── Header ──────────────────────────────────── */
+  .header {
+    padding: 0 12px;
+    height: 44px;
+  }
+
+  .logo {
+    gap: 6px;
+    font-size: 0.85rem;
+  }
+
+  .logo svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .header-right {
+    gap: 8px;
+  }
+
+  /* Hide "Ask InfraWrap" text, show only icon */
+  .cmd-k-trigger {
+    padding: 6px 8px;
+    font-size: 0;
+    gap: 0;
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .cmd-k-trigger .cmd-palette-kbd {
+    font-size: 0.7rem;
+  }
+
+  /* Smaller connection status */
+  .conn-status {
+    font-size: 0.68rem;
+  }
+
+  .mode-pill {
+    font-size: 0.64rem;
+    padding: 2px 6px;
+  }
+
+  /* ── Stat Row: 2x3 grid ──────────────────────── */
+  .stat-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-cell {
+    padding: 10px 12px;
+  }
+
+  .stat-label {
+    font-size: 0.64rem;
+  }
+
+  .stat-value {
+    font-size: 1.15rem;
+  }
+
+  /* ── Tab bar: horizontally scrollable ────────── */
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 0 12px;
+    gap: 0;
+    flex-wrap: nowrap;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab {
+    padding: 8px 10px;
+    font-size: 0.71rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-height: 44px;
+  }
+
+  /* ── Main layout ─────────────────────────────── */
+  .main {
+    grid-template-columns: 1fr;
+  }
+
+  .col-left {
+    border-right: none;
+  }
+
+  /* ── EventStream sidebar: full-screen overlay ── */
+  .col-right {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100vh;
+    z-index: 200;
+    background: var(--bg-primary);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+  }
+
+  .col-right.mobile-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    font-size: 1.4rem;
+    cursor: pointer;
+    z-index: 210;
+  }
+
+  .sidebar-close-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 190;
+    background: rgba(5, 8, 18, 0.6);
+  }
+
+  .sidebar-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--teal);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    z-index: 100;
+    box-shadow: 0 4px 16px rgba(10, 205, 170, 0.3);
+  }
+
+  .sidebar-fab:active {
+    transform: scale(0.92);
+  }
+
+  /* ── Topology Map ────────────────────────────── */
+  .topo-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 400px;
+  }
+
+  .topo-svg {
+    min-width: 700px;
+    min-height: 400px;
+  }
+
+  /* ── Resources ───────────────────────────────── */
+  .resource-gauges {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+
+  .gauge-svg {
+    width: 90px;
+    height: 90px;
+  }
+
+  .gauge-pct {
+    font-size: 1.1rem;
+  }
+
+  /* Right-sizing cards: single column */
+  .rightsizing-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rightsizing-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .rightsizing-resource {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .rightsizing-resource-detail {
+    width: auto;
+    text-align: left;
+  }
+
+  /* Predictions: single column */
+  .predictions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Metric history: full width, stacked */
+  .metric-history-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── Nodes: single column ────────────────────── */
+  .nodes-grid {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+
+  /* ── Governance ──────────────────────────────── */
+  .gov-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .gov-item {
+    padding: 10px;
+  }
+
+  .gov-value {
+    font-size: 0.92rem;
+  }
+
+  /* Audit trail: reduce padding */
+  .audit-header {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .audit-detail {
+    padding: 0 10px 10px 28px;
+  }
+
+  .audit-detail-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .audit-plan-header {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .audit-plan-goal {
+    font-size: 0.71rem;
+  }
+
+  /* ── Chaos ───────────────────────────────────── */
+  .chaos-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  .chaos-field {
+    min-width: 100%;
+  }
+
+  .btn-simulate,
+  .btn-execute-chaos {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .chaos-sim-stats {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .chaos-comparison {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── Incidents ───────────────────────────────── */
+  .incident-card {
+    padding: 12px;
+  }
+
+  .incident-row {
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .incident-row-resolution {
+    max-width: 100%;
+  }
+
+  .incidents-section-title {
+    padding: 12px 12px 6px;
+  }
+
+  /* ── Toast: full width at bottom ─────────────── */
+  .toast-container {
+    bottom: 0;
+    right: 0;
+    left: 0;
+    max-width: 100%;
+    padding: 0 8px 8px;
+  }
+
+  .toast {
+    min-width: auto;
+    width: 100%;
+  }
+
+  /* ── Command Palette: full width ─────────────── */
+  .cmd-palette-overlay {
+    padding-top: 8vh;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .cmd-palette {
+    max-width: 100%;
+    border-radius: 12px;
+  }
+
+  .cmd-palette-input-row {
+    padding: 12px 14px;
+    gap: 8px;
+  }
+
+  .cmd-palette-input {
+    font-size: 1rem;
+  }
+
+  .cmd-palette-chips {
+    padding: 10px 14px;
+  }
+
+  .cmd-palette-chip {
+    font-size: 0.71rem;
+    padding: 6px 10px;
+    min-height: 36px;
+  }
+
+  /* ── Cards: reduce padding ───────────────────── */
+  .card-head {
+    padding: 10px 12px;
+  }
+
+  .card-body {
+    padding: 12px;
+  }
+
+  /* ── Sparklines section ──────────────────────── */
+  .sparklines-section {
+    grid-template-columns: 1fr;
+    padding: 0 12px 12px;
+  }
+
+  /* ── Node breakdown ──────────────────────────── */
+  .node-breakdown-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Healing banner */
+  .healing-banner {
+    padding: 8px 12px;
+    font-size: 0.71rem;
+  }
+
+  /* Timeline reduce padding */
+  .incident-timeline {
+    padding: 4px 12px 12px 12px;
+  }
+}
