@@ -579,6 +579,9 @@ export class ProxmoxAdapter implements InfraAdapter {
       cpu_usage_pct: n.cpu != null ? Math.round(n.cpu * 10000) / 100 : 0,
       ram_total_mb: n.maxmem ? Math.round(n.maxmem / 1024 / 1024) : 0,
       ram_used_mb: n.mem ? Math.round(n.mem / 1024 / 1024) : 0,
+      disk_total_gb: n.maxdisk ? Math.round((n.maxdisk / 1024 / 1024 / 1024) * 100) / 100 : 0,
+      disk_used_gb: n.disk ? Math.round((n.disk / 1024 / 1024 / 1024) * 100) / 100 : 0,
+      disk_usage_pct: n.maxdisk ? Math.round((n.disk / n.maxdisk) * 10000) / 100 : 0,
       uptime_s: n.uptime ?? 0,
     }));
 

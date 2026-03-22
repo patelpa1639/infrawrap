@@ -14,6 +14,9 @@ export interface NodeInfo {
   ram_total_mb: number;
   ram_mb?: number;
   ram_used_mb: number;
+  disk_total_gb: number;
+  disk_used_gb: number;
+  disk_usage_pct: number;
   uptime_s: number;
 }
 

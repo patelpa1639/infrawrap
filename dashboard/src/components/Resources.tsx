@@ -54,12 +54,12 @@ export default function Resources() {
 
   const cpuPct = res?.cpu_usage_pct ?? firstNode?.cpu_usage_pct ?? 0;
   const ramPct = res?.ram_usage_pct ?? (firstNode ? (firstNode.ram_used_mb / firstNode.ram_total_mb) * 100 : 0);
-  const diskPct = res?.disk_usage_pct ?? 0;
+  const diskPct = res?.disk_usage_pct ?? firstNode?.disk_usage_pct ?? 0;
 
   const ramUsedGB = (res?.ram_used_mb ?? firstNode?.ram_used_mb ?? 0) / 1024;
   const ramTotalGB = (res?.ram_total_mb ?? firstNode?.ram_total_mb ?? 0) / 1024;
-  const diskUsedGB = res?.disk_used_gb ?? 0;
-  const diskTotalGB = res?.disk_total_gb ?? 0;
+  const diskUsedGB = res?.disk_used_gb ?? firstNode?.disk_used_gb ?? 0;
+  const diskTotalGB = res?.disk_total_gb ?? firstNode?.disk_total_gb ?? 0;
   const cpuCores = res?.cpu_cores ?? firstNode?.cpu_cores ?? 0;
 
   const sigOver = recommendations.filter((r) => r.savings_pct > 50).length;
